@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 80" fill="none">
+  <!-- River flowing line -->
+  <path d="M0 42 C30 32, 50 52, 80 42 S130 32, 160 42 S210 52, 240 42 S290 32, 320 42 S370 52, 400 42" stroke="#1B4965" stroke-width="2.5" stroke-linecap="round" opacity="0.3"/>
+  <path d="M0 48 C30 38, 50 58, 80 48 S130 38, 160 48 S210 58, 240 48 S290 38, 320 48 S370 58, 400 48" stroke="#1B4965" stroke-width="1.5" stroke-linecap="round" opacity="0.15"/>
+
+  <!-- RIVER text -->
+  <text x="28" y="46" font-family="'Playfair Display', 'Georgia', serif" font-size="38" font-weight="700" letter-spacing="6" fill="#1B4965">RIVER</text>
+
+  <!-- LANDS text -->
+  <text x="210" y="46" font-family="'Playfair Display', 'Georgia', serif" font-size="38" font-weight="400" letter-spacing="6" fill="#C6923A">LANDS</text>
+
+  <!-- Tagline -->
+  <text x="200" y="66" font-family="'Inter', 'Helvetica', sans-serif" font-size="9" letter-spacing="4" fill="#5B7553" text-anchor="middle" font-weight="500">DISCOVER THE HEART OF ILLINOIS</text>
+</svg>
