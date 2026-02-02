@@ -1,6 +1,7 @@
 "use client";
 
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { counties } from "@/lib/counties";
@@ -63,36 +64,35 @@ export function PartnersFilter({ partners }: { partners: ActivePartner[] }) {
           </p>
         ) : (
           filteredPartners.map((partner) => (
-            <Card
-              key={partner.id}
-              className="transition-shadow hover:shadow-md"
-            >
-              <CardContent className="flex gap-4 p-5">
-                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-amber/10">
-                  <HugeiconsIcon
-                    icon={Store01Icon}
-                    size={20}
-                    className="text-amber"
-                  />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-foreground">
-                    {partner.name}
-                  </h3>
-                  <div className="mt-1 flex items-center gap-2">
-                    <Badge variant="secondary" className="text-xs">
-                      {partner.category}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {partner.countyName}
-                    </span>
+            <Link key={partner.id} href={`/partners/${partner.slug}`}>
+              <Card className="transition-shadow hover:shadow-md">
+                <CardContent className="flex gap-4 p-5">
+                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-amber/10">
+                    <HugeiconsIcon
+                      icon={Store01Icon}
+                      size={20}
+                      className="text-amber"
+                    />
                   </div>
-                  <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                    {partner.description}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-foreground">
+                      {partner.name}
+                    </h3>
+                    <div className="mt-1 flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs">
+                        {partner.category}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {partner.countyName}
+                      </span>
+                    </div>
+                    <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                      {partner.description}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           ))
         )}
       </div>

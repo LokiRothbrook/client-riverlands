@@ -185,6 +185,21 @@ export async function getPublishedEventsByCounty(
   return (data ?? []).map(mapEvent);
 }
 
+export async function getEventById(
+  id: string
+): Promise<PublishedEvent | null> {
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("events")
+    .select(EVENT_SELECT)
+    .eq("id", id)
+    .eq("status", "published")
+    .maybeSingle();
+
+  return data ? mapEvent(data) : null;
+}
+
 // ── Partners ─────────────────────────────────────────────────────
 
 export interface ActivePartner {
@@ -255,6 +270,21 @@ export async function getActivePartnersByCounty(
     .order("name");
 
   return (data ?? []).map(mapPartner);
+}
+
+export async function getPartnerBySlug(
+  slug: string
+): Promise<ActivePartner | null> {
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("partners")
+    .select(PARTNER_SELECT)
+    .eq("slug", slug)
+    .eq("status", "active")
+    .maybeSingle();
+
+  return data ? mapPartner(data) : null;
 }
 
 // ── Ads ──────────────────────────────────────────────────────────

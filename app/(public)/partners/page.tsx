@@ -62,44 +62,43 @@ export default async function PartnersPage() {
             </h2>
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {featuredPartners.map((partner) => (
-                <Card
-                  key={partner.id}
-                  className="group transition-shadow hover:shadow-md"
-                >
-                  {partner.logo ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={partner.logo}
-                      alt={partner.name}
-                      className="aspect-[16/10] w-full object-cover"
-                    />
-                  ) : (
-                    <div className="aspect-[16/10] bg-gradient-to-br from-amber/20 via-sage/10 to-river-blue/10" />
-                  )}
-                  <CardContent className="p-5">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber/10">
-                      <HugeiconsIcon
-                        icon={Store01Icon}
-                        size={18}
-                        className="text-amber"
+                <Link key={partner.id} href={`/partners/${partner.slug}`}>
+                  <Card className="group transition-shadow hover:shadow-md">
+                    {partner.logo ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={partner.logo}
+                        alt={partner.name}
+                        className="aspect-[16/10] w-full object-cover"
                       />
-                    </div>
-                    <h3 className="mt-3 font-semibold text-foreground">
-                      {partner.name}
-                    </h3>
-                    <div className="mt-1 flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">
-                        {partner.category}
-                      </Badge>
-                    </div>
-                    <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">
-                      {partner.description}
-                    </p>
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      {partner.countyName}
-                    </p>
-                  </CardContent>
-                </Card>
+                    ) : (
+                      <div className="aspect-[16/10] bg-gradient-to-br from-amber/20 via-sage/10 to-river-blue/10" />
+                    )}
+                    <CardContent className="p-5">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber/10">
+                        <HugeiconsIcon
+                          icon={Store01Icon}
+                          size={18}
+                          className="text-amber"
+                        />
+                      </div>
+                      <h3 className="mt-3 font-semibold text-foreground group-hover:text-primary">
+                        {partner.name}
+                      </h3>
+                      <div className="mt-1 flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs">
+                          {partner.category}
+                        </Badge>
+                      </div>
+                      <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">
+                        {partner.description}
+                      </p>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {partner.countyName}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
           </div>
