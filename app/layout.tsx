@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
-import { Header } from "@/components/header";
-import { Footer } from "@/components/footer";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -19,6 +17,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || "https://riverlands.org"
+  ),
   title: {
     default: "Riverlands | Discover the Heart of Illinois",
     template: "%s | Riverlands",
@@ -45,6 +46,22 @@ export const metadata: Metadata = {
       "Explore the historic river counties of western Illinois. Events, history, local businesses, and natural beauty.",
     type: "website",
     locale: "en_US",
+    siteName: "Riverlands",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Riverlands - Discover the Heart of Illinois",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Riverlands | Discover the Heart of Illinois",
+    description:
+      "Explore the historic river counties of western Illinois. Events, history, local businesses, and natural beauty.",
+    images: ["/og-image.jpg"],
   },
 };
 
@@ -64,11 +81,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div className="flex min-h-screen flex-col">
-            <Header />
-            <main className="flex-1">{children}</main>
-            <Footer />
-          </div>
+          {children}
           <Toaster />
         </ThemeProvider>
       </body>

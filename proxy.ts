@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/proxy";
 
+const ADMIN_PUBLIC_PATHS = ["/admin/login", "/admin/reset-password", "/admin/update-password"];
+
 export async function proxy(request: NextRequest) {
   const hostname = request.headers.get("host") || "";
   const pathname = request.nextUrl.pathname;
@@ -14,14 +16,32 @@ export async function proxy(request: NextRequest) {
     // Rewrite admin subdomain requests to /admin routes
     const adminUrl = request.nextUrl.clone();
     adminUrl.pathname = `/admin${pathname}`;
-    const response = NextResponse.rewrite(adminUrl);
 
-    // Refresh Supabase session for admin routes
-    return updateSession(request);
+    // Refresh Supabase session
+    const response = await updateSession(request);
+
+    // Check if user is authenticated for protected admin routes
+    const isPublicAdminPath = ADMIN_PUBLIC_PATHS.some(
+      (p) => `/admin${pathname}`.startsWith(p)
+    );
+
+    if (!isPublicAdminPath) {
+      // Check for Supabase auth cookie
+      const hasSession = request.cookies.getAll().some(
+        (c) => c.name.startsWith("sb-") && c.name.endsWith("-auth-token")
+      );
+
+      if (!hasSession) {
+        const loginUrl = request.nextUrl.clone();
+        loginUrl.pathname = "/admin/login";
+        return NextResponse.redirect(loginUrl);
+      }
+    }
+
+    return response;
   }
 
   // For public routes, refresh session if user is logged in
-  // (needed for any authenticated features like saved preferences)
   return updateSession(request);
 }
 

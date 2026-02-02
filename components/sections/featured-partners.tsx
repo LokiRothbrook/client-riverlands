@@ -4,39 +4,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Store01Icon, ArrowRight02Icon } from "@hugeicons/core-free-icons";
+import { getActivePartners } from "@/lib/queries";
 
-const placeholderPartners = [
-  {
-    name: "Wittmond Hotel & Restaurant",
-    category: "Lodging & Dining",
-    county: "Calhoun County",
-    description:
-      "Serving guests for over five generations in the heart of Brussels, overlooking the scenic countryside.",
-  },
-  {
-    name: "Heartland Lodge",
-    category: "Lodging & Recreation",
-    county: "Pike County",
-    description:
-      "Premier hunting lodge offering horseback riding, fishing, ATV trails, and UTV rentals.",
-  },
-  {
-    name: "Villa Kathrine Visitor Center",
-    category: "Tourism",
-    county: "Adams County",
-    description:
-      "Mediterranean-style landmark on the Mississippi bluffs housing Quincy's Tourist Information Center.",
-  },
-  {
-    name: "Golden Windmill Museum",
-    category: "Museum",
-    county: "Adams County",
-    description:
-      "The only smock mill with original stones and gears, now a museum and gift shop.",
-  },
-];
+export async function FeaturedPartners() {
+  const allPartners = await getActivePartners();
+  const featured = allPartners.filter((p) => p.isFeatured).slice(0, 4);
 
-export function FeaturedPartners() {
+  if (featured.length === 0) return null;
+
   return (
     <section className="bg-secondary/50 py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -55,9 +30,9 @@ export function FeaturedPartners() {
         </div>
 
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {placeholderPartners.map((partner) => (
+          {featured.map((partner) => (
             <Card
-              key={partner.name}
+              key={partner.id}
               className="group transition-shadow hover:shadow-md"
             >
               <CardContent className="p-5">
@@ -80,7 +55,7 @@ export function FeaturedPartners() {
                   {partner.description}
                 </p>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  {partner.county}
+                  {partner.countyName}
                 </p>
               </CardContent>
             </Card>

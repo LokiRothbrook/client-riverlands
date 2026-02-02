@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { counties } from "@/lib/counties";
+import { FooterNewsletterForm } from "@/components/forms/footer-newsletter-form";
 
 const quickLinks = [
   { href: "/events", label: "Events" },
@@ -80,19 +81,7 @@ export function Footer() {
               Get the latest events, stories, and travel tips delivered to your
               inbox.
             </p>
-            <form className="mt-4 flex gap-2">
-              <input
-                type="email"
-                placeholder="Your email"
-                className="min-w-0 flex-1 rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/50 focus:border-amber focus:outline-none focus:ring-1 focus:ring-amber"
-              />
-              <button
-                type="submit"
-                className="rounded-md bg-amber px-4 py-2 text-sm font-medium text-river-blue-dark transition-colors hover:bg-amber-light"
-              >
-                Join
-              </button>
-            </form>
+            <FooterNewsletterForm />
           </div>
         </div>
 

@@ -6,7 +6,7 @@ export type PartnerRequestStatus = "pending" | "approved" | "rejected";
 
 export type EventStatus = "draft" | "published" | "cancelled";
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       profiles: {
@@ -34,6 +34,7 @@ export interface Database {
           assigned_counties?: string[];
           avatar_url?: string | null;
         };
+        Relationships: [];
       };
       counties: {
         Row: {
@@ -72,6 +73,7 @@ export interface Database {
           meta_description?: string | null;
           display_order?: number;
         };
+        Relationships: [];
       };
       categories: {
         Row: {
@@ -94,6 +96,7 @@ export interface Database {
           description?: string | null;
           display_order?: number;
         };
+        Relationships: [];
       };
       posts: {
         Row: {
@@ -143,6 +146,29 @@ export interface Database {
           og_image?: string | null;
           published_at?: string | null;
         };
+        Relationships: [
+          {
+            foreignKeyName: "posts_county_id_fkey";
+            columns: ["county_id"];
+            isOneToOne: false;
+            referencedRelation: "counties";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "posts_author_id_fkey";
+            columns: ["author_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "posts_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "categories";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       events: {
         Row: {
@@ -189,6 +215,22 @@ export interface Database {
           external_link?: string | null;
           featured_image?: string | null;
         };
+        Relationships: [
+          {
+            foreignKeyName: "events_county_id_fkey";
+            columns: ["county_id"];
+            isOneToOne: false;
+            referencedRelation: "counties";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "events_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       partners: {
         Row: {
@@ -236,6 +278,15 @@ export interface Database {
           is_featured?: boolean;
           status?: "active" | "inactive";
         };
+        Relationships: [
+          {
+            foreignKeyName: "partners_county_id_fkey";
+            columns: ["county_id"];
+            isOneToOne: false;
+            referencedRelation: "counties";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       partner_requests: {
         Row: {
@@ -272,6 +323,15 @@ export interface Database {
           reviewed_by?: string | null;
           reviewed_at?: string | null;
         };
+        Relationships: [
+          {
+            foreignKeyName: "partner_requests_county_id_fkey";
+            columns: ["county_id"];
+            isOneToOne: false;
+            referencedRelation: "counties";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       ad_placements: {
         Row: {
@@ -311,6 +371,15 @@ export interface Database {
           impressions?: number;
           clicks?: number;
         };
+        Relationships: [
+          {
+            foreignKeyName: "ad_placements_county_id_fkey";
+            columns: ["county_id"];
+            isOneToOne: false;
+            referencedRelation: "counties";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       newsletter_subscribers: {
         Row: {
@@ -338,6 +407,30 @@ export interface Database {
           verified?: boolean;
           verification_token?: string | null;
         };
+        Relationships: [];
+      };
+      contact_messages: {
+        Row: {
+          id: string;
+          name: string;
+          email: string;
+          subject: string;
+          message: string;
+          read: boolean;
+          archived: boolean;
+          created_at: string;
+        };
+        Insert: {
+          name: string;
+          email: string;
+          subject: string;
+          message: string;
+        };
+        Update: {
+          read?: boolean;
+          archived?: boolean;
+        };
+        Relationships: [];
       };
       site_settings: {
         Row: {
@@ -358,7 +451,23 @@ export interface Database {
           description?: string | null;
           updated_by?: string | null;
         };
+        Relationships: [];
       };
     };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      [_ in never]: never;
+    };
+    Enums: {
+      user_role: UserRole;
+      post_status: PostStatus;
+      event_status: EventStatus;
+      partner_request_status: PartnerRequestStatus;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
   };
-}
+};

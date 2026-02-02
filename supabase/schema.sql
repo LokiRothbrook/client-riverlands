@@ -194,6 +194,21 @@ create table newsletter_subscribers (
 create index newsletter_email_idx on newsletter_subscribers(email);
 create index newsletter_verified_idx on newsletter_subscribers(verified) where verified = true;
 
+-- Contact Messages
+create table contact_messages (
+  id uuid primary key default uuid_generate_v4(),
+  name text not null,
+  email text not null,
+  subject text not null,
+  message text not null,
+  read boolean not null default false,
+  archived boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create index contact_messages_read_idx on contact_messages(read) where read = false;
+create index contact_messages_archived_idx on contact_messages(archived);
+
 -- Site Settings (key-value store for admin-configurable settings)
 create table site_settings (
   id uuid primary key default uuid_generate_v4(),
@@ -276,6 +291,7 @@ alter table partners enable row level security;
 alter table partner_requests enable row level security;
 alter table ad_placements enable row level security;
 alter table newsletter_subscribers enable row level security;
+alter table contact_messages enable row level security;
 alter table site_settings enable row level security;
 
 -- Helper: get current user's role
@@ -436,6 +452,14 @@ create policy "newsletter_insert" on newsletter_subscribers
 -- This is handled via API routes with service role
 -- Admins can read and manage
 create policy "newsletter_manage_admin" on newsletter_subscribers
+  for all using (get_user_role() = 'admin');
+
+-- ----- CONTACT MESSAGES -----
+-- Anyone can insert a message (public form)
+create policy "contact_messages_insert" on contact_messages
+  for insert with check (true);
+-- Admins can read and manage messages
+create policy "contact_messages_manage_admin" on contact_messages
   for all using (get_user_role() = 'admin');
 
 -- ----- SITE SETTINGS -----
