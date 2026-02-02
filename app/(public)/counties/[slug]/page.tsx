@@ -8,7 +8,6 @@ import {
   getActivePartnersByCounty,
 } from "@/lib/queries";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -22,6 +21,8 @@ import {
 } from "@hugeicons/core-free-icons";
 import { JsonLd } from "@/components/json-ld";
 import { breadcrumbSchema } from "@/lib/structured-data";
+import { CountySidebarAd } from "@/components/ads/county-sidebar-ad";
+import { AffiliateSidebar } from "@/components/ads/affiliate-sidebar";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://riverlands.org";
 
@@ -249,22 +250,14 @@ export default async function CountyPage({ params }: CountyPageProps) {
               </div>
             )}
 
-            {/* Affiliate placeholder */}
-            <Card className="border-dashed">
-              <CardContent className="p-5 text-center">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Planning a visit to {county.seat}?
-                </p>
-                <Button
-                  asChild
-                  variant="outline"
-                  size="sm"
-                  className="mt-3"
-                >
-                  <Link href="/advertise">Find Hotels & Lodging</Link>
-                </Button>
-              </CardContent>
-            </Card>
+            {/* County Ad */}
+            <CountySidebarAd countySlug={slug} />
+
+            {/* Affiliate Links */}
+            <AffiliateSidebar
+              countyName={county.name}
+              countySeat={county.seat}
+            />
 
             {/* Other counties */}
             <div>

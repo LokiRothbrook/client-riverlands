@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { counties } from "@/lib/counties";
+import { getSiteSettings } from "@/lib/queries";
 import { FooterNewsletterForm } from "@/components/forms/footer-newsletter-form";
 
 const quickLinks = [
@@ -12,7 +13,20 @@ const quickLinks = [
   { href: "/contact", label: "Contact Us" },
 ];
 
-export function Footer() {
+const socialKeys = [
+  { key: "social_facebook", label: "Facebook" },
+  { key: "social_instagram", label: "Instagram" },
+  { key: "social_twitter", label: "Twitter/X" },
+  { key: "social_youtube", label: "YouTube" },
+] as const;
+
+export async function Footer() {
+  const settings = await getSiteSettings();
+
+  const socialLinks = socialKeys
+    .map(({ key, label }) => ({ label, url: settings[key] }))
+    .filter((link) => link.url);
+
   return (
     <footer className="border-t bg-river-blue text-primary-foreground">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
@@ -32,6 +46,21 @@ export function Footer() {
               Lincoln&apos;s footsteps to bald eagle watching, your adventure
               starts here.
             </p>
+            {socialLinks.length > 0 && (
+              <div className="mt-4 flex gap-3">
+                {socialLinks.map((link) => (
+                  <a
+                    key={link.label}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-white/70 transition-colors hover:text-white"
+                  >
+                    {link.label}
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Quick Links */}

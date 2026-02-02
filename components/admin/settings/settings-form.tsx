@@ -48,6 +48,19 @@ const settingsGroups = [
       { key: "ads_rate_card_url", label: "Rate Card URL", type: "url" },
     ],
   },
+  {
+    title: "Affiliate Links",
+    settings: [
+      { key: "affiliate_hotels_url", label: "Hotels URL", type: "url" },
+      { key: "affiliate_hotels_label", label: "Hotels Label", type: "text" },
+      { key: "affiliate_activities_url", label: "Activities URL", type: "url" },
+      { key: "affiliate_activities_label", label: "Activities Label", type: "text" },
+      { key: "affiliate_rentals_url", label: "Rentals URL", type: "url" },
+      { key: "affiliate_rentals_label", label: "Rentals Label", type: "text" },
+      { key: "affiliate_vacation_url", label: "Vacation URL", type: "url" },
+      { key: "affiliate_vacation_label", label: "Vacation Label", type: "text" },
+    ],
+  },
 ];
 
 export function SettingsForm({

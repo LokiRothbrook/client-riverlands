@@ -356,3 +356,35 @@ export async function getSiteSettings(): Promise<Record<string, string>> {
   });
   return settings;
 }
+
+// ── Affiliate Links ─────────────────────────────────────────────
+
+export interface AffiliateLink {
+  type: string;
+  label: string;
+  url: string;
+}
+
+const AFFILIATE_KEYS = [
+  "affiliate_hotels",
+  "affiliate_activities",
+  "affiliate_rentals",
+  "affiliate_vacation",
+] as const;
+
+export async function getAffiliateLinks(): Promise<AffiliateLink[]> {
+  const settings = await getSiteSettings();
+
+  return AFFILIATE_KEYS.reduce<AffiliateLink[]>((links, key) => {
+    const url = settings[`${key}_url`];
+    const label = settings[`${key}_label`];
+    if (url) {
+      links.push({
+        type: key.replace("affiliate_", ""),
+        label: label || key.replace("affiliate_", "").replace(/_/g, " "),
+        url,
+      });
+    }
+    return links;
+  }, []);
+}

@@ -5,6 +5,7 @@ import { UpcomingEvents } from "@/components/sections/upcoming-events";
 import { FeaturedPartners } from "@/components/sections/featured-partners";
 import { CountyCards } from "@/components/sections/county-cards";
 import { NewsletterCta } from "@/components/sections/newsletter-cta";
+import { HomepageBannerAd } from "@/components/ads/homepage-banner-ad";
 import { JsonLd } from "@/components/json-ld";
 import { websiteSchema } from "@/lib/structured-data";
 
@@ -15,6 +16,9 @@ export default function HomePage() {
       <HeroSection />
       <Suspense>
         <FeaturedPosts />
+      </Suspense>
+      <Suspense>
+        <HomepageBannerAd />
       </Suspense>
       <CountyCards />
       <Suspense>

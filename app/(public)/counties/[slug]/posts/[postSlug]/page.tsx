@@ -1,15 +1,17 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { getCountyBySlug } from "@/lib/counties";
 import { getPostBySlug, getPublishedPostsByCounty } from "@/lib/queries";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { JsonLd } from "@/components/json-ld";
 import { articleSchema, breadcrumbSchema } from "@/lib/structured-data";
+import { PostInlineAd } from "@/components/ads/post-inline-ad";
+import { SocialShare } from "@/components/social-share";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://riverlands.org";
 
@@ -128,21 +130,14 @@ export default async function PostPage({ params }: PostPageProps) {
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
 
-        {/* Social sharing placeholder */}
+        {/* Inline ad */}
+        <Suspense>
+          <PostInlineAd countySlug={slug} />
+        </Suspense>
+
+        {/* Social sharing */}
         <Separator className="my-8" />
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-muted-foreground">
-              Share this story:
-            </span>
-            <Button variant="outline" size="sm">
-              Facebook
-            </Button>
-            <Button variant="outline" size="sm">
-              Twitter
-            </Button>
-          </div>
-        </div>
+        <SocialShare url={postUrl} title={post.title} />
 
         {/* Related posts */}
         {relatedPosts.length > 0 && (
