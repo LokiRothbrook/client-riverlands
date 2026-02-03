@@ -1,3 +1,17 @@
+/**
+ * Escape HTML entities for safe display in email HTML context.
+ */
+function escapeHtml(text: string): string {
+  const htmlEntities: Record<string, string> = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  };
+  return text.replace(/[&<>"']/g, (char) => htmlEntities[char]);
+}
+
 function baseLayout(content: string): string {
   return `<!DOCTYPE html>
 <html>
@@ -48,15 +62,20 @@ export function contactNotificationTemplate({
   subject: string;
   message: string;
 }): string {
+  const safeName = escapeHtml(name);
+  const safeEmail = escapeHtml(email);
+  const safeSubject = escapeHtml(subject);
+  const safeMessage = escapeHtml(message).replace(/\n/g, "<br>");
+
   return baseLayout(`
     <h2 style="margin:0 0 16px;color:#1B4965;font-size:20px;">New Contact Message</h2>
     <table style="width:100%;margin-bottom:16px;">
-      <tr><td style="padding:4px 8px;color:#666;font-weight:600;">From:</td><td style="padding:4px 8px;">${name}</td></tr>
-      <tr><td style="padding:4px 8px;color:#666;font-weight:600;">Email:</td><td style="padding:4px 8px;"><a href="mailto:${email}" style="color:#1B4965;">${email}</a></td></tr>
-      <tr><td style="padding:4px 8px;color:#666;font-weight:600;">Subject:</td><td style="padding:4px 8px;">${subject}</td></tr>
+      <tr><td style="padding:4px 8px;color:#666;font-weight:600;">From:</td><td style="padding:4px 8px;">${safeName}</td></tr>
+      <tr><td style="padding:4px 8px;color:#666;font-weight:600;">Email:</td><td style="padding:4px 8px;"><a href="mailto:${safeEmail}" style="color:#1B4965;">${safeEmail}</a></td></tr>
+      <tr><td style="padding:4px 8px;color:#666;font-weight:600;">Subject:</td><td style="padding:4px 8px;">${safeSubject}</td></tr>
     </table>
     <div style="background-color:#f9f8f6;padding:16px;border-radius:6px;color:#333;line-height:1.6;">
-      ${message.replace(/\n/g, "<br>")}
+      ${safeMessage}
     </div>
   `);
 }
@@ -68,10 +87,13 @@ export function partnerRequestConfirmationTemplate({
   contactName: string;
   businessName: string;
 }): string {
+  const safeContactName = escapeHtml(contactName);
+  const safeBusinessName = escapeHtml(businessName);
+
   return baseLayout(`
     <h2 style="margin:0 0 16px;color:#1B4965;font-size:20px;">Application Received</h2>
-    <p style="color:#333;line-height:1.6;">Hi ${contactName},</p>
-    <p style="color:#333;line-height:1.6;">Thank you for submitting a partner application for <strong>${businessName}</strong>. We've received your request and our team will review it shortly.</p>
+    <p style="color:#333;line-height:1.6;">Hi ${safeContactName},</p>
+    <p style="color:#333;line-height:1.6;">Thank you for submitting a partner application for <strong>${safeBusinessName}</strong>. We've received your request and our team will review it shortly.</p>
     <p style="color:#333;line-height:1.6;">You'll receive an email once your application has been reviewed. In the meantime, feel free to <a href="${process.env.NEXT_PUBLIC_SITE_URL || "https://riverlands.org"}/contact" style="color:#1B4965;">contact us</a> if you have any questions.</p>
     <p style="color:#333;line-height:1.6;">Best regards,<br>The Riverlands Team</p>
   `);
@@ -90,13 +112,18 @@ export function partnerRequestAdminTemplate({
 }): string {
   const adminUrl =
     process.env.NEXT_PUBLIC_ADMIN_URL || "https://admin.riverlands.org";
+  const safeBusinessName = escapeHtml(businessName);
+  const safeContactName = escapeHtml(contactName);
+  const safeEmail = escapeHtml(email);
+  const safeCounty = escapeHtml(county);
+
   return baseLayout(`
     <h2 style="margin:0 0 16px;color:#1B4965;font-size:20px;">New Partner Application</h2>
     <table style="width:100%;margin-bottom:16px;">
-      <tr><td style="padding:4px 8px;color:#666;font-weight:600;">Business:</td><td style="padding:4px 8px;">${businessName}</td></tr>
-      <tr><td style="padding:4px 8px;color:#666;font-weight:600;">Contact:</td><td style="padding:4px 8px;">${contactName}</td></tr>
-      <tr><td style="padding:4px 8px;color:#666;font-weight:600;">Email:</td><td style="padding:4px 8px;"><a href="mailto:${email}" style="color:#1B4965;">${email}</a></td></tr>
-      <tr><td style="padding:4px 8px;color:#666;font-weight:600;">County:</td><td style="padding:4px 8px;">${county}</td></tr>
+      <tr><td style="padding:4px 8px;color:#666;font-weight:600;">Business:</td><td style="padding:4px 8px;">${safeBusinessName}</td></tr>
+      <tr><td style="padding:4px 8px;color:#666;font-weight:600;">Contact:</td><td style="padding:4px 8px;">${safeContactName}</td></tr>
+      <tr><td style="padding:4px 8px;color:#666;font-weight:600;">Email:</td><td style="padding:4px 8px;"><a href="mailto:${safeEmail}" style="color:#1B4965;">${safeEmail}</a></td></tr>
+      <tr><td style="padding:4px 8px;color:#666;font-weight:600;">County:</td><td style="padding:4px 8px;">${safeCounty}</td></tr>
     </table>
     <a href="${adminUrl}/partner-requests" style="display:inline-block;padding:10px 20px;background-color:#C6923A;color:#1B4965;text-decoration:none;border-radius:6px;font-weight:600;">Review Application</a>
   `);
@@ -124,10 +151,13 @@ export function adminNotificationTemplate({
   subject: string;
   message: string;
 }): string {
+  const safeSubject = escapeHtml(subject);
+  const safeMessage = escapeHtml(message).replace(/\n/g, "<br>");
+
   return baseLayout(`
-    <h2 style="margin:0 0 16px;color:#1B4965;font-size:20px;">${subject}</h2>
+    <h2 style="margin:0 0 16px;color:#1B4965;font-size:20px;">${safeSubject}</h2>
     <div style="color:#333;line-height:1.6;">
-      ${message.replace(/\n/g, "<br>")}
+      ${safeMessage}
     </div>
   `);
 }

@@ -42,6 +42,8 @@ export function PartnersTable({ partners }: { partners: Partner[] }) {
     if (res.ok) {
       toast.success(current ? "Removed from featured" : "Marked as featured");
       router.refresh();
+    } else {
+      toast.error("Failed to update featured status");
     }
   }
 

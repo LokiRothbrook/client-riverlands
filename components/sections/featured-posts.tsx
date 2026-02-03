@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -49,12 +50,15 @@ export async function FeaturedPosts() {
               className="group overflow-hidden transition-shadow hover:shadow-lg"
             >
               {post.featuredImage ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={post.featuredImage}
-                  alt={post.title}
-                  className="aspect-[16/10] w-full object-cover"
-                />
+                <div className="relative aspect-[16/10] w-full">
+                  <Image
+                    src={post.featuredImage}
+                    alt={post.title}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  />
+                </div>
               ) : (
                 <div className="aspect-[16/10] bg-gradient-to-br from-river-blue/20 via-sage/10 to-amber/10" />
               )}

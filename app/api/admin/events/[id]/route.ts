@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireApiRole } from "@/lib/auth";
+import { updateEventSchema } from "@/lib/validations/admin";
 
 export async function GET(
   _request: NextRequest,
@@ -41,14 +42,46 @@ export async function PUT(
   try {
     const { id } = await params;
     const supabase = await createClient();
-    const { error: authError } = await requireApiRole(supabase, [
+    const { user, error: authError } = await requireApiRole(supabase, [
       "admin",
       "editor",
     ]);
     if (authError) return authError;
 
-    const body = await request.json();
+    // Check county authorization for editors
+    if (user.role === "editor") {
+      const { data: event } = await supabase
+        .from("events")
+        .select("county_id, counties(slug)")
+        .eq("id", id)
+        .single();
 
+      if (!event) {
+        return NextResponse.json({ error: "Event not found" }, { status: 404 });
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const countySlug = (event.counties as any)?.slug;
+      if (!countySlug || !user.assigned_counties.includes(countySlug)) {
+        return NextResponse.json(
+          { error: "Not authorized for this county" },
+          { status: 403 }
+        );
+      }
+    }
+
+    const rawBody = await request.json();
+
+    // Validate request body
+    const parseResult = updateEventSchema.safeParse(rawBody);
+    if (!parseResult.success) {
+      return NextResponse.json(
+        { error: "Invalid request body", details: parseResult.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const body = parseResult.data;
     const updateData: Record<string, unknown> = {};
     if (body.title !== undefined) updateData.title = body.title;
     if (body.description !== undefined)

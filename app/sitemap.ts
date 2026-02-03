@@ -1,10 +1,14 @@
 import type { MetadataRoute } from "next";
 import { counties } from "@/lib/counties";
+import {
+  getPublishedPostsForSitemap,
+  getPublishedEventsForSitemap,
+} from "@/lib/queries-static";
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://riverlands.org";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     "/",
     "/about",
@@ -32,5 +36,30 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.9,
   }));
 
-  return [...staticRoutes, countyRoutes[0], ...countyRoutes.slice(1)];
+  // Fetch published posts and events for dynamic routes
+  const [posts, events] = await Promise.all([
+    getPublishedPostsForSitemap(),
+    getPublishedEventsForSitemap(),
+  ]);
+
+  const postRoutes: MetadataRoute.Sitemap = posts.map((post) => ({
+    url: `${BASE_URL}/counties/${post.countySlug}/posts/${post.slug}`,
+    lastModified: new Date(post.publishedAt),
+    changeFrequency: "monthly",
+    priority: 0.7,
+  }));
+
+  const eventRoutes: MetadataRoute.Sitemap = events.map((event) => ({
+    url: `${BASE_URL}/events/${event.id}`,
+    lastModified: new Date(event.startDate),
+    changeFrequency: "weekly",
+    priority: 0.6,
+  }));
+
+  return [
+    ...staticRoutes,
+    ...countyRoutes,
+    ...postRoutes,
+    ...eventRoutes,
+  ];
 }

@@ -1,9 +1,12 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getCountyBySlug } from "@/lib/counties";
 import { getPostBySlug, getPublishedPostsByCounty } from "@/lib/queries";
+import { getPostParams } from "@/lib/queries-static";
+import { sanitizeContent } from "@/lib/sanitize";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -15,8 +18,14 @@ import { SocialShare } from "@/components/social-share";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://riverlands.org";
 
+export const revalidate = 3600; // Revalidate every hour
+
 interface PostPageProps {
   params: Promise<{ slug: string; postSlug: string }>;
+}
+
+export async function generateStaticParams() {
+  return getPostParams();
 }
 
 export async function generateMetadata({
@@ -30,6 +39,9 @@ export async function generateMetadata({
     description: post.metaDescription || post.excerpt,
     openGraph: {
       images: post.ogImage || post.featuredImage || undefined,
+    },
+    alternates: {
+      canonical: `${SITE_URL}/counties/${slug}/posts/${postSlug}`,
     },
   };
 }
@@ -114,12 +126,15 @@ export default async function PostPage({ params }: PostPageProps) {
 
         {/* Featured image */}
         {post.featuredImage ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={post.featuredImage}
-            alt={post.title}
-            className="aspect-[16/9] w-full rounded-xl object-cover"
-          />
+          <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl">
+            <Image
+              src={post.featuredImage}
+              alt={post.title}
+              fill
+              className="object-cover"
+              priority
+            />
+          </div>
         ) : (
           <div className="aspect-[16/9] rounded-xl bg-gradient-to-br from-river-blue/20 via-sage/10 to-amber/10" />
         )}
@@ -127,7 +142,7 @@ export default async function PostPage({ params }: PostPageProps) {
         {/* Content */}
         <div
           className="prose prose-lg mt-8 max-w-none"
-          dangerouslySetInnerHTML={{ __html: post.content }}
+          dangerouslySetInnerHTML={{ __html: sanitizeContent(post.content) }}
         />
 
         {/* Inline ad */}

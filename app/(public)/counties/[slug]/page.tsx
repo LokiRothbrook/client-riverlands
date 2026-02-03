@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import { counties, getCountyBySlug } from "@/lib/counties";
 import {
@@ -30,6 +31,8 @@ interface CountyPageProps {
   params: Promise<{ slug: string }>;
 }
 
+export const revalidate = 3600; // Revalidate every hour
+
 export async function generateStaticParams() {
   return counties.map((county) => ({ slug: county.slug }));
 }
@@ -43,6 +46,9 @@ export async function generateMetadata({
   return {
     title: `${county.name} | Explore ${county.seat}, IL`,
     description: county.description,
+    alternates: {
+      canonical: `${SITE_URL}/counties/${slug}`,
+    },
   };
 }
 
@@ -129,14 +135,17 @@ export default async function CountyPage({ params }: CountyPageProps) {
                     <Card key={post.slug} className="overflow-hidden">
                       <div className="flex flex-col sm:flex-row">
                         {post.featuredImage ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={post.featuredImage}
-                            alt={post.title}
-                            className="aspect-[16/10] w-full object-cover sm:aspect-auto sm:w-48 sm:flex-shrink-0"
-                          />
+                          <div className="relative aspect-[16/10] w-full sm:aspect-[4/3] sm:w-48 sm:flex-shrink-0">
+                            <Image
+                              src={post.featuredImage}
+                              alt={post.title}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 640px) 100vw, 192px"
+                            />
+                          </div>
                         ) : (
-                          <div className="aspect-[16/10] w-full bg-gradient-to-br from-river-blue/20 via-sage/10 to-amber/10 sm:aspect-auto sm:w-48 sm:flex-shrink-0" />
+                          <div className="aspect-[16/10] w-full bg-gradient-to-br from-river-blue/20 via-sage/10 to-amber/10 sm:aspect-[4/3] sm:w-48 sm:flex-shrink-0" />
                         )}
                         <div className="flex-1 p-5">
                           <div className="flex items-center gap-2">

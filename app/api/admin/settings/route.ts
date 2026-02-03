@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireApiRole } from "@/lib/auth";
+import { updateSettingsSchema } from "@/lib/validations/admin";
 
 export async function GET() {
   try {
@@ -34,10 +35,18 @@ export async function PUT(request: Request) {
     ]);
     if (authError) return authError;
 
-    const body = await request.json();
-    const { settings } = body as {
-      settings: { key: string; value: string; description?: string }[];
-    };
+    const rawBody = await request.json();
+
+    // Validate request body
+    const parseResult = updateSettingsSchema.safeParse(rawBody);
+    if (!parseResult.success) {
+      return NextResponse.json(
+        { error: "Invalid request body", details: parseResult.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { settings } = parseResult.data;
 
     // Upsert each setting
     for (const setting of settings) {

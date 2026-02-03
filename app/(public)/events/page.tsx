@@ -8,10 +8,15 @@ import { getPublishedEvents } from "@/lib/queries";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://riverlands.org";
 
+export const revalidate = 3600; // Revalidate every hour
+
 export const metadata: Metadata = {
   title: "Events",
   description:
     "Discover upcoming events across the seven river counties of western Illinois. Festivals, tours, cultural events, and outdoor activities.",
+  alternates: {
+    canonical: `${SITE_URL}/events`,
+  },
 };
 
 export default async function EventsPage() {

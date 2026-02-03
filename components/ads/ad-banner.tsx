@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import type { ActiveAd } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 
@@ -59,13 +60,15 @@ export function AdBanner({ ads, zone, className }: AdBannerProps) {
         target="_blank"
         rel="noopener noreferrer sponsored"
         onClick={() => trackEvent("click")}
-        className="overflow-hidden rounded-lg transition-opacity hover:opacity-90"
+        className="relative block overflow-hidden rounded-lg transition-opacity hover:opacity-90"
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src={ad.imageUrl}
           alt={ad.businessName}
-          className="max-w-full"
+          width={728}
+          height={90}
+          className="max-w-full h-auto"
+          unoptimized
         />
       </a>
       <span className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">

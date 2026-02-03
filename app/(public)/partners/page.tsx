@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,10 +15,15 @@ import { getActivePartners } from "@/lib/queries";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://riverlands.org";
 
+export const revalidate = 3600; // Revalidate every hour
+
 export const metadata: Metadata = {
   title: "Partners & Business Directory",
   description:
     "Discover local businesses, attractions, and services across the seven river counties of western Illinois.",
+  alternates: {
+    canonical: `${SITE_URL}/partners`,
+  },
 };
 
 export default async function PartnersPage() {
@@ -65,12 +71,15 @@ export default async function PartnersPage() {
                 <Link key={partner.id} href={`/partners/${partner.slug}`}>
                   <Card className="group transition-shadow hover:shadow-md">
                     {partner.logo ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={partner.logo}
-                        alt={partner.name}
-                        className="aspect-[16/10] w-full object-cover"
-                      />
+                      <div className="relative aspect-[16/10] w-full">
+                        <Image
+                          src={partner.logo}
+                          alt={partner.name}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                        />
+                      </div>
                     ) : (
                       <div className="aspect-[16/10] bg-gradient-to-br from-amber/20 via-sage/10 to-river-blue/10" />
                     )}

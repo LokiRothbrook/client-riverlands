@@ -9,8 +9,9 @@ import {
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM_EMAIL = "Riverlands <noreply@riverlands.org>";
-const ADMIN_EMAIL = "admin@riverlands.org";
+const FROM_EMAIL =
+  process.env.FROM_EMAIL || "Riverlands <noreply@riverlands.org>";
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@riverlands.org";
 
 export async function sendEmail({
   to,

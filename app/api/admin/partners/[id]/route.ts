@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireApiRole } from "@/lib/auth";
+import { updatePartnerSchema } from "@/lib/validations/admin";
 
 export async function GET(
   _request: NextRequest,
@@ -44,7 +45,18 @@ export async function PUT(
     const { error: authError } = await requireApiRole(supabase, ["admin"]);
     if (authError) return authError;
 
-    const body = await request.json();
+    const rawBody = await request.json();
+
+    // Validate request body
+    const parseResult = updatePartnerSchema.safeParse(rawBody);
+    if (!parseResult.success) {
+      return NextResponse.json(
+        { error: "Invalid request body", details: parseResult.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const body = parseResult.data;
     const updateData: Record<string, unknown> = {};
 
     if (body.name !== undefined) updateData.name = body.name;

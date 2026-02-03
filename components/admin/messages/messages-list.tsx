@@ -29,12 +29,16 @@ export function MessagesList({ messages }: { messages: Message[] }) {
   );
 
   async function markRead(id: string) {
-    await fetch(`/api/admin/messages/${id}`, {
+    const res = await fetch(`/api/admin/messages/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ read: true }),
     });
-    router.refresh();
+    if (res.ok) {
+      router.refresh();
+    } else {
+      toast.error("Failed to mark as read");
+    }
   }
 
   async function toggleArchive(id: string, archived: boolean) {
