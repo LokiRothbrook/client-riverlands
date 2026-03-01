@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
-import { counties, getCountyBySlug } from "@/lib/counties";
+import { getCounties, getCountyBySlug } from "@/lib/counties-server";
 import {
   getPublishedPostsByCounty,
   getPublishedEventsByCounty,
@@ -34,6 +34,7 @@ interface CountyPageProps {
 export const revalidate = 3600; // Revalidate every hour
 
 export async function generateStaticParams() {
+  const counties = await getCounties();
   return counties.map((county) => ({ slug: county.slug }));
 }
 
@@ -41,7 +42,7 @@ export async function generateMetadata({
   params,
 }: CountyPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const county = getCountyBySlug(slug);
+  const county = await getCountyBySlug(slug);
   if (!county) return {};
   return {
     title: `${county.name} | Explore ${county.seat}, IL`,
@@ -62,8 +63,10 @@ function formatDate(dateStr: string): string {
 
 export default async function CountyPage({ params }: CountyPageProps) {
   const { slug } = await params;
-  const county = getCountyBySlug(slug);
+  const county = await getCountyBySlug(slug);
   if (!county) notFound();
+
+  const allCounties = await getCounties();
 
   const [countyPosts, countyEvents, countyPartners] = await Promise.all([
     getPublishedPostsByCounty(slug),
@@ -132,43 +135,44 @@ export default async function CountyPage({ params }: CountyPageProps) {
               {countyPosts.length > 0 ? (
                 <div className="mt-6 space-y-6">
                   {countyPosts.map((post) => (
-                    <Card key={post.slug} className="overflow-hidden">
-                      <div className="flex flex-col sm:flex-row">
-                        {post.featuredImage ? (
-                          <div className="relative aspect-[16/10] w-full sm:aspect-[4/3] sm:w-48 sm:flex-shrink-0">
-                            <Image
-                              src={post.featuredImage}
-                              alt={post.title}
-                              fill
-                              className="object-cover"
-                              sizes="(max-width: 640px) 100vw, 192px"
-                            />
-                          </div>
-                        ) : (
-                          <div className="aspect-[16/10] w-full bg-gradient-to-br from-river-blue/20 via-sage/10 to-amber/10 sm:aspect-[4/3] sm:w-48 sm:flex-shrink-0" />
-                        )}
-                        <div className="flex-1 p-5">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary" className="text-xs">
-                              {post.categoryName}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {formatDate(post.publishedAt)}
-                            </span>
-                          </div>
-                          <h3 className="mt-2 font-semibold text-foreground hover:text-primary">
-                            <Link
-                              href={`/counties/${slug}/posts/${post.slug}`}
-                            >
+                    <Link
+                      key={post.slug}
+                      href={`/counties/${slug}/posts/${post.slug}`}
+                    >
+                      <Card className="group overflow-hidden transition-shadow hover:shadow-lg">
+                        <div className="flex flex-col sm:flex-row">
+                          {post.featuredImage ? (
+                            <div className="relative aspect-[16/10] w-full sm:aspect-[4/3] sm:w-48 sm:flex-shrink-0">
+                              <Image
+                                src={post.featuredImage}
+                                alt={post.title}
+                                fill
+                                className="object-cover"
+                                sizes="(max-width: 640px) 100vw, 192px"
+                              />
+                            </div>
+                          ) : (
+                            <div className="aspect-[16/10] w-full bg-gradient-to-br from-river-blue/20 via-sage/10 to-amber/10 sm:aspect-[4/3] sm:w-48 sm:flex-shrink-0" />
+                          )}
+                          <div className="flex-1 p-5">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary" className="text-xs">
+                                {post.categoryName}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {formatDate(post.publishedAt)}
+                              </span>
+                            </div>
+                            <h3 className="mt-2 font-semibold text-foreground group-hover:text-primary">
                               {post.title}
-                            </Link>
-                          </h3>
-                          <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                            {post.excerpt}
-                          </p>
+                            </h3>
+                            <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                              {post.excerpt}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </Card>
+                      </Card>
+                    </Link>
                   ))}
                 </div>
               ) : (
@@ -274,7 +278,7 @@ export default async function CountyPage({ params }: CountyPageProps) {
                 Other Counties
               </h3>
               <div className="mt-4 space-y-2">
-                {counties
+                {allCounties
                   .filter((c) => c.slug !== slug)
                   .map((c) => (
                     <Link

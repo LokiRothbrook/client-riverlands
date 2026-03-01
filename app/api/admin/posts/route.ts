@@ -38,6 +38,8 @@ export async function POST(request: Request) {
         county_id: body.countyId,
         author_id: user.id,
         category_id: body.categoryId,
+        is_featured: body.isFeatured ?? false,
+        show_cover_image: body.showCoverImage ?? true,
         status,
         meta_title: body.metaTitle || null,
         meta_description: body.metaDescription || null,

@@ -49,6 +49,8 @@ export type Database = {
           description: string;
           short_description: string;
           hero_image: string | null;
+          lat: number | null;
+          lng: number | null;
           meta_title: string | null;
           meta_description: string | null;
           display_order: number;
@@ -62,6 +64,8 @@ export type Database = {
           description: string;
           short_description: string;
           hero_image?: string | null;
+          lat?: number | null;
+          lng?: number | null;
           meta_title?: string | null;
           meta_description?: string | null;
           display_order?: number;
@@ -73,6 +77,8 @@ export type Database = {
           description?: string;
           short_description?: string;
           hero_image?: string | null;
+          lat?: number | null;
+          lng?: number | null;
           meta_title?: string | null;
           meta_description?: string | null;
           display_order?: number;
@@ -113,6 +119,8 @@ export type Database = {
           county_id: string;
           author_id: string;
           category_id: string;
+          is_featured: boolean;
+          show_cover_image: boolean;
           status: PostStatus;
           meta_title: string | null;
           meta_description: string | null;
@@ -130,6 +138,8 @@ export type Database = {
           county_id: string;
           author_id: string;
           category_id: string;
+          is_featured?: boolean;
+          show_cover_image?: boolean;
           status?: PostStatus;
           meta_title?: string | null;
           meta_description?: string | null;
@@ -144,6 +154,8 @@ export type Database = {
           featured_image?: string | null;
           county_id?: string;
           category_id?: string;
+          is_featured?: boolean;
+          show_cover_image?: boolean;
           status?: PostStatus;
           meta_title?: string | null;
           meta_description?: string | null;

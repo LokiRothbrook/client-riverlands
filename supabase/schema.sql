@@ -41,6 +41,8 @@ create table counties (
   description text not null,
   short_description text not null,
   hero_image text,
+  lat double precision,
+  lng double precision,
   meta_title text,
   meta_description text,
   display_order integer not null default 0,
@@ -73,6 +75,8 @@ create table posts (
   county_id uuid not null references counties(id) on delete cascade,
   author_id uuid not null references profiles(id) on delete cascade,
   category_id uuid not null references categories(id) on delete restrict,
+  is_featured boolean not null default false,
+  show_cover_image boolean not null default true,
   status post_status not null default 'draft',
   meta_title text,
   meta_description text,
@@ -89,6 +93,7 @@ create index posts_category_idx on posts(category_id);
 create index posts_status_idx on posts(status);
 create index posts_published_at_idx on posts(published_at desc);
 create index posts_slug_idx on posts(slug);
+create index posts_featured_idx on posts(is_featured) where is_featured = true;
 
 -- Events
 create table events (

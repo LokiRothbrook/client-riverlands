@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { counties, getCountyBySlug } from "@/lib/counties";
+import { getCounties } from "@/lib/counties-server";
 import { Card, CardContent } from "@/components/ui/card";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Location01Icon } from "@hugeicons/core-free-icons";
@@ -27,15 +27,16 @@ export const metadata: Metadata = {
 };
 
 export default async function ExplorePage() {
-  const [events, partners] = await Promise.all([
+  const [events, partners, allCounties] = await Promise.all([
     getUpcomingEvents(),
     getActivePartners(),
+    getCounties(),
   ]);
 
   // Build markers from events — place around their county's coordinates
   const eventMarkers: MapMarker[] = events.flatMap((event, i) => {
-    const county = getCountyBySlug(event.countySlug);
-    if (!county) return [];
+    const county = allCounties.find((c) => c.slug === event.countySlug);
+    if (!county || county.lat == null || county.lng == null) return [];
     const [dlat, dlng] = offsetFor(i, events.length);
     return [
       {
@@ -52,8 +53,8 @@ export default async function ExplorePage() {
 
   // Build markers from partners — place around their county's coordinates
   const partnerMarkers: MapMarker[] = partners.flatMap((partner, i) => {
-    const county = getCountyBySlug(partner.countySlug);
-    if (!county) return [];
+    const county = allCounties.find((c) => c.slug === partner.countySlug);
+    if (!county || county.lat == null || county.lng == null) return [];
     const [dlat, dlng] = offsetFor(i, partners.length);
     return [
       {
@@ -108,7 +109,7 @@ export default async function ExplorePage() {
             Browse by County
           </h2>
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {counties.map((county) => (
+            {allCounties.map((county) => (
               <Link key={county.slug} href={`/counties/${county.slug}`}>
                 <Card className="group cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5">
                   <CardContent className="p-5">

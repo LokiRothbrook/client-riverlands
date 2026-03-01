@@ -94,6 +94,10 @@ export async function PUT(
     if (body.countyId !== undefined) updateData.county_id = body.countyId;
     if (body.categoryId !== undefined)
       updateData.category_id = body.categoryId;
+    if (body.isFeatured !== undefined)
+      updateData.is_featured = body.isFeatured;
+    if (body.showCoverImage !== undefined)
+      updateData.show_cover_image = body.showCoverImage;
 
     // Handle scheduling
     if (body.scheduledFor !== undefined) {

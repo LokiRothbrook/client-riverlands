@@ -19,6 +19,59 @@ export function validateForm(
   return { success: false, errors };
 }
 
+// ── Counties ────────────────────────────────────────────────────
+
+export const createCountySchema = z.object({
+  name: z.string().min(1, "Name is required").max(100),
+  slug: z
+    .string()
+    .min(1, "Slug is required")
+    .max(100)
+    .regex(slugRegex, "Slug must be lowercase alphanumeric with hyphens"),
+  seat: z.string().min(1, "County seat is required").max(100),
+  description: z
+    .string()
+    .min(1, "Description is required")
+    .max(2000, "Description must be 2000 characters or less"),
+  shortDescription: z
+    .string()
+    .min(1, "Short description is required")
+    .max(200, "Short description must be 200 characters or less"),
+  heroImage: z.string().url().nullable().optional(),
+  lat: z.number().nullable().optional(),
+  lng: z.number().nullable().optional(),
+  displayOrder: z.number().int().min(0).optional(),
+  metaTitle: z.string().max(70).nullable().optional(),
+  metaDescription: z.string().max(160).nullable().optional(),
+});
+
+export const updateCountySchema = createCountySchema.partial();
+
+export type CreateCountyInput = z.infer<typeof createCountySchema>;
+export type UpdateCountyInput = z.infer<typeof updateCountySchema>;
+
+// ── Categories ──────────────────────────────────────────────────
+
+export const createCategorySchema = z.object({
+  name: z.string().min(1, "Name is required").max(100),
+  slug: z
+    .string()
+    .min(1, "Slug is required")
+    .max(100)
+    .regex(slugRegex, "Slug must be lowercase alphanumeric with hyphens"),
+  description: z
+    .string()
+    .max(500, "Description must be 500 characters or less")
+    .nullable()
+    .optional(),
+  displayOrder: z.number().int().min(0).optional(),
+});
+
+export const updateCategorySchema = createCategorySchema.partial();
+
+export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
+export type UpdateCategoryInput = z.infer<typeof updateCategorySchema>;
+
 // ── Posts ────────────────────────────────────────────────────────
 
 export const createPostSchema = z.object({
@@ -39,6 +92,8 @@ export const createPostSchema = z.object({
   countyId: z.string().uuid("Please select a county"),
   categoryId: z.string().uuid("Please select a category"),
   status: z.enum(["draft", "published", "archived"]),
+  isFeatured: z.boolean().optional(),
+  showCoverImage: z.boolean().optional(),
   featuredImage: z.string().url("Must be a valid URL").nullable().optional(),
   metaTitle: z
     .string()

@@ -9,6 +9,7 @@ export interface PublishedPost {
   excerpt: string;
   content: string;
   featuredImage: string | null;
+  showCoverImage: boolean;
   countySlug: string;
   countyName: string;
   categoryName: string;
@@ -21,7 +22,7 @@ export interface PublishedPost {
 }
 
 const POST_SELECT = `
-  id, title, slug, excerpt, content, featured_image,
+  id, title, slug, excerpt, content, featured_image, show_cover_image,
   published_at, meta_title, meta_description, og_image,
   counties!inner(slug, name),
   categories!inner(name, slug),
@@ -37,6 +38,7 @@ function mapPost(row: any): PublishedPost {
     excerpt: row.excerpt,
     content: row.content,
     featuredImage: row.featured_image,
+    showCoverImage: row.show_cover_image ?? true,
     countySlug: row.counties?.slug ?? "",
     countyName: row.counties?.name ?? "",
     categoryName: row.categories?.name ?? "",
@@ -96,6 +98,78 @@ export async function getPostBySlug(
     .maybeSingle();
 
   return data ? mapPost(data) : null;
+}
+
+export async function getFeaturedPosts(
+  limit: number
+): Promise<PublishedPost[]> {
+  const supabase = await createClient();
+
+  // First try: featured posts
+  const { data: featured } = await supabase
+    .from("posts")
+    .select(POST_SELECT)
+    .eq("status", "published")
+    .eq("is_featured", true)
+    .order("published_at", { ascending: false })
+    .limit(limit);
+
+  // If we have enough featured posts, return them
+  if ((featured?.length ?? 0) >= limit) {
+    return featured!.map(mapPost);
+  }
+
+  // Otherwise, fill remaining slots with latest non-featured posts
+  const featuredIds = (featured ?? []).map((p: { id: string }) => p.id);
+  const remaining = limit - (featured?.length ?? 0);
+
+  let latestQuery = supabase
+    .from("posts")
+    .select(POST_SELECT)
+    .eq("status", "published")
+    .order("published_at", { ascending: false })
+    .limit(remaining);
+
+  if (featuredIds.length > 0) {
+    latestQuery = latestQuery.not(
+      "id",
+      "in",
+      `(${featuredIds.join(",")})`
+    );
+  }
+
+  const { data: latest } = await latestQuery;
+
+  return [...(featured ?? []), ...(latest ?? [])].map(mapPost);
+}
+
+export async function getFeaturedPostsCount(): Promise<number> {
+  const supabase = await createClient();
+
+  const { count } = await supabase
+    .from("posts")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "published");
+
+  return count ?? 0;
+}
+
+export async function getFeaturedPostsPaginated(
+  offset: number,
+  limit: number
+): Promise<PublishedPost[]> {
+  const supabase = await createClient();
+
+  // Order: featured first, then by published_at
+  const { data } = await supabase
+    .from("posts")
+    .select(POST_SELECT)
+    .eq("status", "published")
+    .order("is_featured", { ascending: false })
+    .order("published_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  return (data ?? []).map(mapPost);
 }
 
 // ── Events ───────────────────────────────────────────────────────
@@ -395,11 +469,25 @@ export async function getCountiesFromDb() {
   const { data } = await supabase
     .from("counties")
     .select(
-      "id, name, slug, seat, description, short_description, hero_image"
+      "id, name, slug, seat, description, short_description, hero_image, lat, lng, display_order"
     )
     .order("display_order");
 
   return data ?? [];
+}
+
+export async function getCountyBySlugFromDb(slug: string) {
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("counties")
+    .select(
+      "id, name, slug, seat, description, short_description, hero_image, lat, lng, display_order, meta_title, meta_description"
+    )
+    .eq("slug", slug)
+    .maybeSingle();
+
+  return data;
 }
 
 // ── Site Settings ────────────────────────────────────────────────

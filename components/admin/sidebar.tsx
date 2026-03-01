@@ -16,6 +16,8 @@ import {
   MegaphoneIcon,
   UserIcon,
   CheckListIcon,
+  Location01Icon,
+  Tag01Icon,
 } from "@hugeicons/core-free-icons";
 
 const navItems = [
@@ -32,8 +34,11 @@ const navItems = [
   { href: "/admin/users", label: "Users", icon: UserGroupIcon, adminOnly: true },
   { href: "/admin/newsletter", label: "Newsletter", icon: Mail01Icon },
   { href: "/admin/messages", label: "Messages", icon: UserIcon },
-  { href: "/admin/settings", label: "Settings", icon: Settings01Icon },
+  { href: "/admin/counties", label: "Counties", icon: Location01Icon, adminOnly: true },
+  { href: "/admin/categories", label: "Categories", icon: Tag01Icon, adminOnly: true },
 ];
+
+const settingsItem = { href: "/admin/settings", label: "Settings", icon: Settings01Icon };
 
 export function AdminSidebar() {
   const pathname = usePathname();
@@ -86,6 +91,22 @@ export function AdminSidebar() {
             );
           })}
         </nav>
+
+        {/* Settings — pinned to bottom */}
+        <div className="px-3 pb-2">
+          <Link
+            href={settingsItem.href}
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+              pathname.startsWith(settingsItem.href)
+                ? "bg-white/15 text-white"
+                : "text-white/60 hover:bg-white/10 hover:text-white"
+            )}
+          >
+            <HugeiconsIcon icon={settingsItem.icon} size={18} />
+            {settingsItem.label}
+          </Link>
+        </div>
 
         {/* User info */}
         <div className="border-t border-white/10 p-4">

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { counties } from "@/lib/counties";
+import { getCounties } from "@/lib/counties-server";
 import { getSiteSettings } from "@/lib/queries";
 import { FooterNewsletterForm } from "@/components/forms/footer-newsletter-form";
 
@@ -21,7 +21,10 @@ const socialKeys = [
 ] as const;
 
 export async function Footer() {
-  const settings = await getSiteSettings();
+  const [settings, counties] = await Promise.all([
+    getSiteSettings(),
+    getCounties(),
+  ]);
 
   const socialLinks = socialKeys
     .map(({ key, label }) => ({ label, url: settings[key] }))

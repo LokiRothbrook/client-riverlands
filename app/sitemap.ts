@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { counties } from "@/lib/counties";
+import { getCounties } from "@/lib/counties-server";
 import {
   getPublishedPostsForSitemap,
   getPublishedEventsForSitemap,
@@ -28,6 +28,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: route === "/" ? "daily" : "weekly",
     priority: route === "/" ? 1 : 0.8,
   }));
+
+  const counties = await getCounties();
 
   const countyRoutes: MetadataRoute.Sitemap = counties.map((county) => ({
     url: `${BASE_URL}/counties/${county.slug}`,

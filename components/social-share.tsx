@@ -1,6 +1,15 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  Facebook01Icon,
+  NewTwitterIcon,
+  PinterestIcon,
+  Linkedin01Icon,
+  Mail01Icon,
+  Copy01Icon,
+} from "@hugeicons/core-free-icons";
 import { toast } from "sonner";
 
 interface SocialShareProps {
@@ -19,31 +28,63 @@ export function SocialShare({ url, title }: SocialShareProps) {
     );
   }
 
+  const platforms = [
+    {
+      label: "Share on Facebook",
+      icon: Facebook01Icon,
+      href: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+    },
+    {
+      label: "Share on X",
+      icon: NewTwitterIcon,
+      href: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`,
+    },
+    {
+      label: "Share on Pinterest",
+      icon: PinterestIcon,
+      href: `https://pinterest.com/pin/create/button/?url=${encodedUrl}&description=${encodedTitle}`,
+    },
+    {
+      label: "Share on LinkedIn",
+      icon: Linkedin01Icon,
+      href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
+    },
+    {
+      label: "Share via Email",
+      icon: Mail01Icon,
+      href: `mailto:?subject=${encodedTitle}&body=${encodedUrl}`,
+    },
+  ];
+
   return (
     <div className="flex items-center gap-3">
       <span className="text-sm font-medium text-muted-foreground">
-        Share this story:
+        Share:
       </span>
-      <Button variant="outline" size="sm" asChild>
-        <a
-          href={`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`}
-          target="_blank"
-          rel="noopener noreferrer"
+      {platforms.map((platform) => (
+        <Button
+          key={platform.label}
+          variant="outline"
+          size="icon"
+          asChild
+          title={platform.label}
         >
-          Facebook
-        </a>
-      </Button>
-      <Button variant="outline" size="sm" asChild>
-        <a
-          href={`https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Twitter
-        </a>
-      </Button>
-      <Button variant="outline" size="sm" onClick={copyLink}>
-        Copy Link
+          <a
+            href={platform.href}
+            target={platform.href.startsWith("mailto:") ? undefined : "_blank"}
+            rel={platform.href.startsWith("mailto:") ? undefined : "noopener noreferrer"}
+          >
+            <HugeiconsIcon icon={platform.icon} size={18} />
+          </a>
+        </Button>
+      ))}
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={copyLink}
+        title="Copy link"
+      >
+        <HugeiconsIcon icon={Copy01Icon} size={18} />
       </Button>
     </div>
   );

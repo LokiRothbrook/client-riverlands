@@ -74,8 +74,8 @@ export default function RegionMap({ filteredCounties, markers }: RegionMapProps)
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      {displayCounties.map((county: County) => (
-        <Marker key={county.slug} position={[county.lat, county.lng]}>
+      {displayCounties.filter((c: County) => c.lat != null && c.lng != null).map((county: County) => (
+        <Marker key={county.slug} position={[county.lat!, county.lng!]}>
           <Popup>
             <div className="min-w-[180px]">
               <h3 className="text-sm font-bold">{county.name}</h3>

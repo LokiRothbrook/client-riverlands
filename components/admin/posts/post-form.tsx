@@ -43,6 +43,8 @@ interface PostFormProps {
     featured_image: string | null;
     county_id: string;
     category_id: string;
+    is_featured: boolean;
+    show_cover_image: boolean;
     status: string;
     meta_title: string | null;
     meta_description: string | null;
@@ -64,6 +66,10 @@ export function PostForm({ post, counties, categories }: PostFormProps) {
   );
   const [countyId, setCountyId] = useState(post?.county_id ?? "");
   const [categoryId, setCategoryId] = useState(post?.category_id ?? "");
+  const [isFeatured, setIsFeatured] = useState(post?.is_featured ?? false);
+  const [showCoverImage, setShowCoverImage] = useState(
+    post?.show_cover_image ?? true
+  );
   const [status, setStatus] = useState(post?.status ?? "draft");
   const [metaTitle, setMetaTitle] = useState(post?.meta_title ?? "");
   const [metaDescription, setMetaDescription] = useState(
@@ -95,6 +101,8 @@ export function PostForm({ post, counties, categories }: PostFormProps) {
       slug,
       content,
       excerpt,
+      isFeatured,
+      showCoverImage,
       featuredImage: featuredImage || null,
       countyId,
       categoryId,
@@ -224,6 +232,26 @@ export function PostForm({ post, counties, categories }: PostFormProps) {
                     <SelectItem value="archived">Archived</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="featured"
+                  checked={isFeatured}
+                  onChange={(e) => setIsFeatured(e.target.checked)}
+                  className="rounded"
+                />
+                <Label htmlFor="featured">Feature on homepage</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="showCoverImage"
+                  checked={showCoverImage}
+                  onChange={(e) => setShowCoverImage(e.target.checked)}
+                  className="rounded"
+                />
+                <Label htmlFor="showCoverImage">Show cover image</Label>
               </div>
               <div className="space-y-2">
                 <Label>County</Label>

@@ -3,14 +3,13 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { getCountyBySlug } from "@/lib/counties";
+import { getCountyBySlug } from "@/lib/counties-server";
 import { getPostBySlug, getPublishedPostsByCounty } from "@/lib/queries";
 import { getPostParams } from "@/lib/queries-static";
 import { sanitizeContent } from "@/lib/sanitize";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Breadcrumb } from "@/components/breadcrumb";
 import { JsonLd } from "@/components/json-ld";
 import { articleSchema, breadcrumbSchema } from "@/lib/structured-data";
 import { PostInlineAd } from "@/components/ads/post-inline-ad";
@@ -56,7 +55,7 @@ function formatDate(dateStr: string): string {
 
 export default async function PostPage({ params }: PostPageProps) {
   const { slug, postSlug } = await params;
-  const county = getCountyBySlug(slug);
+  const county = await getCountyBySlug(slug);
   const post = await getPostBySlug(slug, postSlug);
 
   if (!county || !post) notFound();
@@ -87,18 +86,6 @@ export default async function PostPage({ params }: PostPageProps) {
         ])}
       />
 
-      {/* Breadcrumb */}
-      <div className="border-b bg-secondary/30">
-        <div className="mx-auto max-w-4xl px-4 py-3 sm:px-6">
-          <Breadcrumb
-            items={[
-              { label: county.name, href: `/counties/${slug}` },
-              { label: post.title },
-            ]}
-          />
-        </div>
-      </div>
-
       <article className="mx-auto max-w-4xl px-4 py-10 sm:px-6 sm:py-16">
         {/* Header */}
         <header>
@@ -125,18 +112,20 @@ export default async function PostPage({ params }: PostPageProps) {
         <Separator className="my-8" />
 
         {/* Featured image */}
-        {post.featuredImage ? (
-          <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl">
-            <Image
-              src={post.featuredImage}
-              alt={post.title}
-              fill
-              className="object-cover"
-              priority
-            />
-          </div>
-        ) : (
-          <div className="aspect-[16/9] rounded-xl bg-gradient-to-br from-river-blue/20 via-sage/10 to-amber/10" />
+        {post.showCoverImage && (
+          post.featuredImage ? (
+            <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl">
+              <Image
+                src={post.featuredImage}
+                alt={post.title}
+                fill
+                className="object-cover"
+                priority
+              />
+            </div>
+          ) : (
+            <div className="aspect-[16/9] rounded-xl bg-gradient-to-br from-river-blue/20 via-sage/10 to-amber/10" />
+          )
         )}
 
         {/* Content */}
@@ -162,23 +151,37 @@ export default async function PostPage({ params }: PostPageProps) {
             </h2>
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               {relatedPosts.slice(0, 4).map((related) => (
-                <Card key={related.slug}>
-                  <CardContent className="p-4">
-                    <Badge variant="secondary" className="text-xs">
-                      {related.categoryName}
-                    </Badge>
-                    <h3 className="mt-2 font-semibold hover:text-primary">
-                      <Link
-                        href={`/counties/${slug}/posts/${related.slug}`}
-                      >
+                <Link
+                  key={related.slug}
+                  href={`/counties/${slug}/posts/${related.slug}`}
+                >
+                  <Card className="group h-full overflow-hidden transition-shadow hover:shadow-lg">
+                    {related.featuredImage ? (
+                      <div className="relative aspect-[16/9] w-full">
+                        <Image
+                          src={related.featuredImage}
+                          alt={related.title}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 640px) 100vw, 50vw"
+                        />
+                      </div>
+                    ) : (
+                      <div className="aspect-[16/9] bg-gradient-to-br from-river-blue/20 via-sage/10 to-amber/10" />
+                    )}
+                    <CardContent className="p-4">
+                      <Badge variant="secondary" className="text-xs">
+                        {related.categoryName}
+                      </Badge>
+                      <h3 className="mt-2 font-semibold group-hover:text-primary">
                         {related.title}
-                      </Link>
-                    </h3>
-                    <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                      {related.excerpt}
-                    </p>
-                  </CardContent>
-                </Card>
+                      </h3>
+                      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                        {related.excerpt}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
           </div>

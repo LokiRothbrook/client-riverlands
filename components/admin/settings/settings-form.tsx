@@ -10,13 +10,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FieldError } from "@/components/admin/field-error";
 import { toast } from "sonner";
 
-const settingsGroups = [
+interface SettingConfig {
+  key: string;
+  label: string;
+  type: string;
+  placeholder?: string;
+}
+
+const settingsGroups: { title: string; settings: SettingConfig[] }[] = [
   {
     title: "General",
     settings: [
       { key: "site_name", label: "Site Name", type: "text" },
       { key: "site_description", label: "Site Description", type: "textarea" },
       { key: "site_url", label: "Site URL", type: "url" },
+      {
+        key: "featured_posts_count",
+        label: "Featured Posts on Homepage",
+        type: "number",
+        placeholder: "12",
+      },
     ],
   },
   {
@@ -77,6 +90,10 @@ function validateSettingValue(
   if (type === "url") {
     const result = z.string().url().safeParse(value);
     if (!result.success) return "Must be a valid URL";
+  }
+  if (type === "number") {
+    const num = parseInt(value);
+    if (isNaN(num) || num < 1 || num > 50) return "Must be a number between 1 and 50";
   }
   return undefined;
 }
@@ -168,6 +185,7 @@ export function SettingsForm({
                     type={setting.type === "email" || setting.type === "url" ? "text" : setting.type}
                     value={values[setting.key] ?? ""}
                     onChange={(e) => updateValue(setting.key, e.target.value)}
+                    placeholder={setting.placeholder}
                     className={errors[setting.key] ? "border-destructive" : ""}
                   />
                 )}

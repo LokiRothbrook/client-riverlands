@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { counties } from "@/lib/counties";
+import Image from "next/image";
+import { getCounties } from "@/lib/counties-server";
 import { Card } from "@/components/ui/card";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowRight02Icon } from "@hugeicons/core-free-icons";
@@ -14,7 +15,9 @@ const countyGradients = [
   "from-sage/20 to-river-blue/10",
 ];
 
-export function CountyCards() {
+export async function CountyCards() {
+  const counties = await getCounties();
+
   return (
     <section className="bg-secondary/50 py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -32,9 +35,21 @@ export function CountyCards() {
           {counties.map((county, i) => (
             <Link key={county.slug} href={`/counties/${county.slug}`}>
               <Card className="group h-full overflow-hidden transition-all hover:shadow-lg hover:-translate-y-0.5">
-                <div
-                  className={`aspect-[16/9] bg-gradient-to-br ${countyGradients[i]}`}
-                />
+                {county.heroImage ? (
+                  <div className="relative aspect-[16/9] w-full">
+                    <Image
+                      src={county.heroImage}
+                      alt={county.name}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                    />
+                  </div>
+                ) : (
+                  <div
+                    className={`aspect-[16/9] bg-gradient-to-br ${countyGradients[i % countyGradients.length]}`}
+                  />
+                )}
                 <div className="p-4">
                   <h3 className="font-semibold text-foreground group-hover:text-primary">
                     {county.name}

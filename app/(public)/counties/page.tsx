@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { counties } from "@/lib/counties";
+import Image from "next/image";
+import { getCounties } from "@/lib/counties-server";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -72,7 +73,9 @@ const countyGradients = [
   "from-sage/20 via-river-blue/10 to-transparent",
 ];
 
-export default function CountiesPage() {
+export default async function CountiesPage() {
+  const counties = await getCounties();
+
   return (
     <>
       <JsonLd
@@ -108,10 +111,22 @@ export default function CountiesPage() {
             <Link key={county.slug} href={`/counties/${county.slug}`}>
               <Card className="group overflow-hidden transition-all hover:shadow-lg hover:-translate-y-0.5">
                 <div className="flex flex-col sm:flex-row">
-                  {/* Image placeholder */}
-                  <div
-                    className={`aspect-[16/10] w-full bg-gradient-to-br ${countyGradients[i]} sm:aspect-auto sm:w-72 sm:flex-shrink-0 lg:w-80`}
-                  />
+                  {/* Image or gradient */}
+                  {county.heroImage ? (
+                    <div className="relative aspect-[16/10] w-full sm:aspect-auto sm:w-72 sm:flex-shrink-0 lg:w-80">
+                      <Image
+                        src={county.heroImage}
+                        alt={county.name}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 640px) 100vw, 320px"
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      className={`aspect-[16/10] w-full bg-gradient-to-br ${countyGradients[i % countyGradients.length]} sm:aspect-auto sm:w-72 sm:flex-shrink-0 lg:w-80`}
+                    />
+                  )}
 
                   {/* Content */}
                   <CardContent className="flex flex-1 flex-col justify-center p-6 sm:p-8">
