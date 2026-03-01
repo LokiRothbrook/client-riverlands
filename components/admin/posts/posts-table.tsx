@@ -10,6 +10,8 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { toast } from "sonner";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { LinkSquare01Icon } from "@hugeicons/core-free-icons";
 
 interface Post {
   id: string;
@@ -77,7 +79,28 @@ export function PostsTable({ posts }: { posts: Post[] }) {
               ) : (
                 filtered.map((post) => (
                   <tr key={post.id} className="border-b last:border-0">
-                    <td className="p-4 font-medium">{post.title}</td>
+                    <td className="p-4 font-medium">
+                      <div className="flex items-center gap-1.5">
+                        <Link
+                          href={`/admin/posts/${post.id}/edit`}
+                          className="hover:underline"
+                        >
+                          {post.title}
+                        </Link>
+                        {post.status === "published" && post.county?.slug && (
+                          <a
+                            href={`/counties/${post.county.slug}/posts/${post.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-foreground"
+                            title="View published post"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <HugeiconsIcon icon={LinkSquare01Icon} size={14} />
+                          </a>
+                        )}
+                      </div>
+                    </td>
                     <td className="p-4 text-muted-foreground">
                       {post.county?.name ?? "-"}
                     </td>
