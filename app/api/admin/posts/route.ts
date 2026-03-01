@@ -13,6 +13,20 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
+    // Determine published_at based on status and scheduledFor
+    let publishedAt: string | null = null;
+    let status = body.status || "draft";
+
+    if (body.scheduledFor) {
+      // If scheduledFor is provided, set published_at to that time
+      // and keep status as draft (cron job will publish it)
+      publishedAt = new Date(body.scheduledFor).toISOString();
+      status = "draft";
+    } else if (body.status === "published") {
+      // Immediate publish
+      publishedAt = new Date().toISOString();
+    }
+
     const { error, data } = await supabase
       .from("posts")
       .insert({
@@ -24,11 +38,10 @@ export async function POST(request: Request) {
         county_id: body.countyId,
         author_id: user.id,
         category_id: body.categoryId,
-        status: body.status || "draft",
+        status,
         meta_title: body.metaTitle || null,
         meta_description: body.metaDescription || null,
-        published_at:
-          body.status === "published" ? new Date().toISOString() : null,
+        published_at: publishedAt,
       })
       .select()
       .single();

@@ -2,10 +2,18 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { newsletterFormSchema } from "@/lib/validations";
 import { sendNewsletterVerification } from "@/lib/email";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { randomUUID } from "crypto";
 
 export async function POST(request: Request) {
   try {
+    // Rate limit: 5 newsletter signups per minute
+    const rateLimitResponse = await checkRateLimit(
+      `newsletter:${getClientIp(request)}`,
+      { requests: 5, window: "1 m" }
+    );
+    if (rateLimitResponse) return rateLimitResponse;
+
     const body = await request.json();
     const parsed = newsletterFormSchema.safeParse(body);
 
@@ -16,7 +24,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { email, firstName, lastName, counties } = parsed.data;
+    const { email, firstName, lastName, counties, topics, frequency } = parsed.data;
     const supabase = await createServiceClient();
 
     // Check if already subscribed
@@ -43,6 +51,8 @@ export async function POST(request: Request) {
           first_name: firstName || null,
           last_name: lastName || null,
           counties_subscribed: counties || [],
+          topics_subscribed: topics || [],
+          frequency: frequency || "weekly",
           verification_token: verificationToken,
         })
         .eq("id", existing.id);
@@ -55,6 +65,8 @@ export async function POST(request: Request) {
           first_name: firstName || null,
           last_name: lastName || null,
           counties_subscribed: counties || [],
+          topics_subscribed: topics || [],
+          frequency: frequency || "weekly",
         });
 
       if (error) {

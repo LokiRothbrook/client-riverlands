@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
+    // Rate limit: 100 ad tracking requests per minute (high volume expected)
+    const rateLimitResponse = await checkRateLimit(
+      `ads:${getClientIp(request)}`,
+      { requests: 100, window: "1 m" }
+    );
+    if (rateLimitResponse) return rateLimitResponse;
+
     const { adId, type } = await request.json();
 
     if (!adId || !["impression", "click"].includes(type)) {

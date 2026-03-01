@@ -41,8 +41,7 @@ Required variables:
 | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name |
 | `CLOUDINARY_API_KEY` | Cloudinary API key |
 | `CLOUDINARY_API_SECRET` | Cloudinary API secret |
-| `NEXT_PUBLIC_SITE_URL` | Public site URL |
-| `NEXT_PUBLIC_ADMIN_URL` | Admin panel URL |
+| `NEXT_PUBLIC_SITE_URL` | Public site URL (also used for admin panel) |
 
 ### Development
 
@@ -92,7 +91,7 @@ Deploy to Vercel:
 2. Set all environment variables in the Vercel dashboard
 3. Deploy
 
-The admin panel is served from the `admin.*` subdomain — configure this in your DNS and Vercel project settings.
+The admin panel is accessible at `/admin` on the same domain — no separate subdomain or DNS configuration needed.
 
 ## License
 

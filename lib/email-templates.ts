@@ -110,8 +110,8 @@ export function partnerRequestAdminTemplate({
   email: string;
   county: string;
 }): string {
-  const adminUrl =
-    process.env.NEXT_PUBLIC_ADMIN_URL || "https://admin.riverlands.org";
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL || "https://riverlands.org";
   const safeBusinessName = escapeHtml(businessName);
   const safeContactName = escapeHtml(contactName);
   const safeEmail = escapeHtml(email);
@@ -125,7 +125,7 @@ export function partnerRequestAdminTemplate({
       <tr><td style="padding:4px 8px;color:#666;font-weight:600;">Email:</td><td style="padding:4px 8px;"><a href="mailto:${safeEmail}" style="color:#1B4965;">${safeEmail}</a></td></tr>
       <tr><td style="padding:4px 8px;color:#666;font-weight:600;">County:</td><td style="padding:4px 8px;">${safeCounty}</td></tr>
     </table>
-    <a href="${adminUrl}/partner-requests" style="display:inline-block;padding:10px 20px;background-color:#C6923A;color:#1B4965;text-decoration:none;border-radius:6px;font-weight:600;">Review Application</a>
+    <a href="${siteUrl}/admin/partner-requests" style="display:inline-block;padding:10px 20px;background-color:#C6923A;color:#1B4965;text-decoration:none;border-radius:6px;font-weight:600;">Review Application</a>
   `);
 }
 
@@ -160,4 +160,66 @@ export function adminNotificationTemplate({
       ${safeMessage}
     </div>
   `);
+}
+
+/**
+ * Newsletter email template that wraps admin-provided content
+ * and adds unsubscribe/manage preference links in the footer.
+ */
+export function newsletterEmailTemplate({
+  content,
+  manageUrl,
+  unsubscribeUrl,
+}: {
+  content: string;
+  manageUrl: string;
+  unsubscribeUrl: string;
+}): string {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://riverlands.org";
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;background-color:#f5f3ef;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f3ef;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#1B4965;padding:24px 32px;border-radius:8px 8px 0 0;">
+              <a href="${siteUrl}" style="text-decoration:none;">
+                <span style="font-size:20px;font-weight:700;color:#ffffff;letter-spacing:1px;">RIVER</span><span style="font-size:20px;font-weight:400;color:#C6923A;letter-spacing:1px;">LANDS</span>
+              </a>
+            </td>
+          </tr>
+          <!-- Content -->
+          <tr>
+            <td style="background-color:#ffffff;padding:32px;">
+              ${content}
+            </td>
+          </tr>
+          <!-- Footer with Manage/Unsubscribe Links -->
+          <tr>
+            <td style="padding:16px 32px;text-align:center;color:#999;font-size:12px;border-radius:0 0 8px 8px;background-color:#ffffff;border-top:1px solid #eee;">
+              <p style="margin:0 0 8px;">&copy; ${new Date().getFullYear()} Riverlands. All rights reserved.</p>
+              <p style="margin:0 0 8px;">
+                <a href="${siteUrl}" style="color:#1B4965;text-decoration:none;">riverlands.org</a>
+              </p>
+              <p style="margin:12px 0 0;color:#666;font-size:11px;">
+                <a href="${manageUrl}" style="color:#1B4965;text-decoration:underline;">Manage Preferences</a>
+                &nbsp;&nbsp;|&nbsp;&nbsp;
+                <a href="${unsubscribeUrl}" style="color:#1B4965;text-decoration:underline;">Unsubscribe</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 }

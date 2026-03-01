@@ -54,6 +54,7 @@ export async function Footer() {
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label={`Follow us on ${link.label}`}
                     className="text-sm text-white/70 transition-colors hover:text-white"
                   >
                     {link.label}
@@ -120,6 +121,12 @@ export async function Footer() {
             &copy; {new Date().getFullYear()} Riverlands. All rights reserved.
           </p>
           <div className="flex gap-4">
+            <Link
+              href="/newsletter/manage"
+              className="text-xs text-white/50 transition-colors hover:text-white/70"
+            >
+              Manage Newsletter
+            </Link>
             <Link
               href="/privacy"
               className="text-xs text-white/50 transition-colors hover:text-white/70"

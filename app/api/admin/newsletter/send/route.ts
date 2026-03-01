@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireApiRole } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
+import { newsletterEmailTemplate } from "@/lib/email-templates";
 
 export async function POST(request: Request) {
   try {
@@ -19,10 +20,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // Fetch verified subscribers
+    // Fetch verified subscribers with their tokens
     let query = supabase
       .from("newsletter_subscribers")
-      .select("email")
+      .select("email, manage_token, unsubscribe_token")
       .eq("verified", true);
 
     // Filter by target counties if specified
@@ -43,15 +44,24 @@ export async function POST(request: Request) {
       );
     }
 
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://riverlands.org";
+
     // Send emails in batches of 50
     const batchSize = 50;
     let sent = 0;
 
     for (let i = 0; i < subscribers.length; i += batchSize) {
       const batch = subscribers.slice(i, i + batchSize);
-      const promises = batch.map((sub) =>
-        sendEmail({ to: sub.email, subject, html })
-      );
+      const promises = batch.map((sub) => {
+        const manageUrl = `${siteUrl}/newsletter/manage?token=${sub.manage_token}`;
+        const unsubscribeUrl = `${siteUrl}/api/newsletter/unsubscribe?token=${sub.unsubscribe_token}`;
+        const wrappedHtml = newsletterEmailTemplate({
+          content: html,
+          manageUrl,
+          unsubscribeUrl,
+        });
+        return sendEmail({ to: sub.email, subject, html: wrappedHtml });
+      });
       await Promise.allSettled(promises);
       sent += batch.length;
     }

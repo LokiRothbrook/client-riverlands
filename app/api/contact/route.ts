@@ -2,9 +2,17 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { contactFormSchema } from "@/lib/validations";
 import { sendContactNotification } from "@/lib/email";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
+    // Rate limit: 5 contact form submissions per minute
+    const rateLimitResponse = await checkRateLimit(
+      `contact:${getClientIp(request)}`,
+      { requests: 5, window: "1 m" }
+    );
+    if (rateLimitResponse) return rateLimitResponse;
+
     const body = await request.json();
     const parsed = contactFormSchema.safeParse(body);
 

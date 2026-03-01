@@ -56,20 +56,24 @@ export function MessagesList({ messages }: { messages: Message[] }) {
   return (
     <div className="space-y-4">
       <div className="flex gap-2">
-        <Badge
-          variant={!showArchived ? "default" : "outline"}
-          className="cursor-pointer"
+        <button
+          type="button"
           onClick={() => setShowArchived(false)}
+          className="inline-flex"
         >
-          Inbox ({messages.filter((m) => !m.archived).length})
-        </Badge>
-        <Badge
-          variant={showArchived ? "default" : "outline"}
-          className="cursor-pointer"
+          <Badge variant={!showArchived ? "default" : "outline"}>
+            Inbox ({messages.filter((m) => !m.archived).length})
+          </Badge>
+        </button>
+        <button
+          type="button"
           onClick={() => setShowArchived(true)}
+          className="inline-flex"
         >
-          Archived ({messages.filter((m) => m.archived).length})
-        </Badge>
+          <Badge variant={showArchived ? "default" : "outline"}>
+            Archived ({messages.filter((m) => m.archived).length})
+          </Badge>
+        </button>
       </div>
 
       {visible.length === 0 ? (
@@ -87,8 +91,9 @@ export function MessagesList({ messages }: { messages: Message[] }) {
               className={cn(!msg.read && "border-l-4 border-l-primary")}
             >
               <CardContent className="p-5">
-                <div
-                  className="flex cursor-pointer items-start justify-between"
+                <button
+                  type="button"
+                  className="flex w-full cursor-pointer items-start justify-between text-left"
                   onClick={() => {
                     setExpandedId(isExpanded ? null : msg.id);
                     if (!msg.read) markRead(msg.id);
@@ -115,10 +120,10 @@ export function MessagesList({ messages }: { messages: Message[] }) {
                       {new Date(msg.created_at).toLocaleDateString()}
                     </p>
                   </div>
-                  <Button variant="ghost" size="sm">
-                    {isExpanded ? "Collapse" : "Expand"}
+                  <Button variant="ghost" size="sm" asChild>
+                    <span>{isExpanded ? "Collapse" : "Expand"}</span>
                   </Button>
-                </div>
+                </button>
 
                 {isExpanded && (
                   <div className="mt-4 space-y-3 border-t pt-4">

@@ -5,9 +5,17 @@ import {
   sendPartnerRequestConfirmation,
   sendPartnerRequestAdminNotification,
 } from "@/lib/email";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
+    // Rate limit: 3 partner applications per hour
+    const rateLimitResponse = await checkRateLimit(
+      `partner-apply:${getClientIp(request)}`,
+      { requests: 3, window: "1 h" }
+    );
+    if (rateLimitResponse) return rateLimitResponse;
+
     const body = await request.json();
     const parsed = partnerApplicationSchema.safeParse(body);
 

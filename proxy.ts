@@ -1,35 +1,29 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/proxy";
 
-const ADMIN_PUBLIC_PATHS = ["/admin/login", "/admin/reset-password", "/admin/update-password"];
+// Public admin paths that don't require authentication
+const ADMIN_PUBLIC_PATHS = [
+  "/admin/login",
+  "/admin/reset-password",
+  "/admin/update-password",
+];
 
 export async function proxy(request: NextRequest) {
-  const hostname = request.headers.get("host") || "";
   const pathname = request.nextUrl.pathname;
 
-  // Determine if this is an admin subdomain request
-  const isAdmin =
-    hostname.startsWith("admin.") ||
-    hostname.startsWith("admin-");
-
-  if (isAdmin) {
-    // Rewrite admin subdomain requests to /admin routes
-    const adminUrl = request.nextUrl.clone();
-    adminUrl.pathname = `/admin${pathname}`;
-
-    // Refresh Supabase session
-    const response = await updateSession(request);
-
-    // Check if user is authenticated for protected admin routes
+  // Check if this is an admin route that requires authentication
+  if (pathname.startsWith("/admin")) {
     const isPublicAdminPath = ADMIN_PUBLIC_PATHS.some(
-      (p) => `/admin${pathname}`.startsWith(p)
+      (p) => pathname === p || pathname.startsWith(p)
     );
 
     if (!isPublicAdminPath) {
       // Check for Supabase auth cookie
-      const hasSession = request.cookies.getAll().some(
-        (c) => c.name.startsWith("sb-") && c.name.endsWith("-auth-token")
-      );
+      const hasSession = request.cookies
+        .getAll()
+        .some(
+          (c) => c.name.startsWith("sb-") && c.name.endsWith("-auth-token")
+        );
 
       if (!hasSession) {
         const loginUrl = request.nextUrl.clone();
@@ -37,11 +31,9 @@ export async function proxy(request: NextRequest) {
         return NextResponse.redirect(loginUrl);
       }
     }
-
-    return response;
   }
 
-  // For public routes, refresh session if user is logged in
+  // Refresh Supabase session for all routes
   return updateSession(request);
 }
 

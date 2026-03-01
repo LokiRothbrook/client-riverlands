@@ -94,12 +94,24 @@ export async function PUT(
     if (body.countyId !== undefined) updateData.county_id = body.countyId;
     if (body.categoryId !== undefined)
       updateData.category_id = body.categoryId;
-    if (body.status !== undefined) {
+
+    // Handle scheduling
+    if (body.scheduledFor !== undefined) {
+      if (body.scheduledFor) {
+        // Schedule for future publishing
+        updateData.published_at = new Date(body.scheduledFor).toISOString();
+        updateData.status = "draft"; // Keep as draft until cron publishes
+      } else {
+        // Clear scheduling (null scheduledFor)
+        updateData.published_at = null;
+      }
+    } else if (body.status !== undefined) {
       updateData.status = body.status;
       if (body.status === "published" && !body.publishedAt) {
         updateData.published_at = new Date().toISOString();
       }
     }
+
     if (body.metaTitle !== undefined)
       updateData.meta_title = body.metaTitle || null;
     if (body.metaDescription !== undefined)

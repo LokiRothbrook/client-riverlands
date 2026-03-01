@@ -17,6 +17,7 @@ export const updatePostSchema = z.object({
   categoryId: z.string().uuid().optional(),
   status: z.enum(["draft", "published", "archived"]).optional(),
   publishedAt: z.string().datetime().nullable().optional(),
+  scheduledFor: z.string().datetime().nullable().optional(),
   metaTitle: z.string().max(70).nullable().optional(),
   metaDescription: z.string().max(160).nullable().optional(),
 });

@@ -166,6 +166,7 @@ create table ad_placements (
   placement_zone text not null, -- 'homepage_banner', 'county_sidebar', 'post_inline', 'footer'
   county_id uuid references counties(id) on delete set null, -- null = site-wide
   is_active boolean not null default true,
+  priority integer not null default 1, -- Higher priority = shown more often (1-10 scale)
   start_date date not null,
   end_date date not null,
   impressions integer not null default 0,
@@ -177,6 +178,9 @@ create table ad_placements (
 create index ad_placements_zone_idx on ad_placements(placement_zone);
 create index ad_placements_active_idx on ad_placements(is_active, start_date, end_date);
 
+-- Newsletter frequency enum
+create type newsletter_frequency as enum ('weekly', 'biweekly', 'monthly');
+
 -- Newsletter Subscribers
 create table newsletter_subscribers (
   id uuid primary key default uuid_generate_v4(),
@@ -184,9 +188,12 @@ create table newsletter_subscribers (
   first_name text,
   last_name text,
   counties_subscribed text[] not null default '{}',
+  topics_subscribed text[] not null default '{}', -- 'events', 'business_news'
+  frequency newsletter_frequency not null default 'weekly',
   verified boolean not null default false,
   verification_token text unique,
   unsubscribe_token text not null unique default uuid_generate_v4()::text,
+  manage_token text not null unique default uuid_generate_v4()::text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

@@ -17,12 +17,12 @@ export function ResetPasswordForm() {
 
     const formData = new FormData(e.currentTarget);
     const email = formData.get("email") as string;
-    const adminUrl =
-      process.env.NEXT_PUBLIC_ADMIN_URL || window.location.origin;
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
 
     const supabase = createClient();
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${adminUrl}/admin/update-password`,
+      redirectTo: `${siteUrl}/admin/update-password`,
     });
 
     if (error) {

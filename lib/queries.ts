@@ -298,6 +298,15 @@ export interface ActiveAd {
   countySlug: string | null;
 }
 
+/**
+ * Get active ads for a placement zone, with impression balancing.
+ * Ads with fewer impressions relative to their priority are returned first.
+ *
+ * The balancing algorithm:
+ * 1. Calculate "impressions per priority point" for each ad
+ * 2. Lower ratio = ad is under-served relative to its priority
+ * 3. Add randomization within similar scores for variety
+ */
 export async function getActiveAds(
   zone?: string,
   countySlug?: string
@@ -308,7 +317,7 @@ export async function getActiveAds(
   let query = supabase
     .from("ad_placements")
     .select(
-      "id, business_name, image_url, link_url, placement_zone, counties(slug)"
+      "id, business_name, image_url, link_url, placement_zone, priority, impressions, counties(slug)"
     )
     .eq("is_active", true)
     .lte("start_date", now)
@@ -318,21 +327,44 @@ export async function getActiveAds(
 
   const { data } = await query;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let ads = (data ?? []).map((ad: any) => ({
-    id: ad.id,
-    businessName: ad.business_name,
-    imageUrl: ad.image_url,
-    linkUrl: ad.link_url,
-    placementZone: ad.placement_zone,
-    countySlug: (ad.counties?.slug as string) ?? null,
-  }));
+  if (!data || data.length === 0) return [];
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let adsWithScore = (data ?? []).map((ad: any) => {
+    // Calculate impressions per priority point
+    // Lower = under-served, should be shown more
+    const priority = ad.priority || 1;
+    const impressions = ad.impressions || 0;
+
+    // Score: impressions / priority (lower is better)
+    // Add small random factor (0-1) to break ties and add variety
+    const baseScore = impressions / priority;
+    const randomFactor = Math.random();
+    const score = baseScore + randomFactor;
+
+    return {
+      id: ad.id,
+      businessName: ad.business_name,
+      imageUrl: ad.image_url,
+      linkUrl: ad.link_url,
+      placementZone: ad.placement_zone,
+      countySlug: (ad.counties?.slug as string) ?? null,
+      score,
+    };
+  });
+
+  // Filter by county if specified
   if (countySlug) {
-    ads = ads.filter((ad) => !ad.countySlug || ad.countySlug === countySlug);
+    adsWithScore = adsWithScore.filter(
+      (ad) => !ad.countySlug || ad.countySlug === countySlug
+    );
   }
 
-  return ads;
+  // Sort by score (lower = should be shown more)
+  adsWithScore.sort((a, b) => a.score - b.score);
+
+  // Return without the score field
+  return adsWithScore.map(({ score: _score, ...ad }) => ad);
 }
 
 // ── Categories ───────────────────────────────────────────────────

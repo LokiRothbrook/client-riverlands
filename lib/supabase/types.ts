@@ -6,6 +6,10 @@ export type PartnerRequestStatus = "pending" | "approved" | "rejected";
 
 export type EventStatus = "draft" | "published" | "cancelled";
 
+export type NewsletterFrequency = "weekly" | "biweekly" | "monthly";
+
+export type NewsletterTopic = "events" | "business_news";
+
 export type Database = {
   public: {
     Tables: {
@@ -342,6 +346,7 @@ export type Database = {
           placement_zone: string;
           county_id: string | null;
           is_active: boolean;
+          priority: number;
           start_date: string;
           end_date: string;
           impressions: number;
@@ -356,6 +361,7 @@ export type Database = {
           placement_zone: string;
           county_id?: string | null;
           is_active?: boolean;
+          priority?: number;
           start_date: string;
           end_date: string;
         };
@@ -366,6 +372,7 @@ export type Database = {
           placement_zone?: string;
           county_id?: string | null;
           is_active?: boolean;
+          priority?: number;
           start_date?: string;
           end_date?: string;
           impressions?: number;
@@ -388,9 +395,12 @@ export type Database = {
           first_name: string | null;
           last_name: string | null;
           counties_subscribed: string[];
+          topics_subscribed: string[];
+          frequency: NewsletterFrequency;
           verified: boolean;
           verification_token: string | null;
           unsubscribe_token: string;
+          manage_token: string;
           created_at: string;
           updated_at: string;
         };
@@ -399,11 +409,15 @@ export type Database = {
           first_name?: string | null;
           last_name?: string | null;
           counties_subscribed?: string[];
+          topics_subscribed?: string[];
+          frequency?: NewsletterFrequency;
         };
         Update: {
           first_name?: string | null;
           last_name?: string | null;
           counties_subscribed?: string[];
+          topics_subscribed?: string[];
+          frequency?: NewsletterFrequency;
           verified?: boolean;
           verification_token?: string | null;
         };

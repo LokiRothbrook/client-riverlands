@@ -9,14 +9,29 @@ export const contactFormSchema = z.object({
 
 export type ContactFormData = z.infer<typeof contactFormSchema>;
 
+export const newsletterTopics = ["events", "business_news"] as const;
+export const newsletterFrequencies = ["weekly", "biweekly", "monthly"] as const;
+
 export const newsletterFormSchema = z.object({
   email: z.email("Please enter a valid email address"),
   firstName: z.string().optional(),
   lastName: z.string().optional(),
   counties: z.array(z.string()).optional(),
+  topics: z.array(z.enum(newsletterTopics)).optional(),
+  frequency: z.enum(newsletterFrequencies).optional(),
 });
 
 export type NewsletterFormData = z.infer<typeof newsletterFormSchema>;
+
+export const newsletterPreferencesSchema = z.object({
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  counties: z.array(z.string()),
+  topics: z.array(z.enum(newsletterTopics)),
+  frequency: z.enum(newsletterFrequencies),
+});
+
+export type NewsletterPreferencesData = z.infer<typeof newsletterPreferencesSchema>;
 
 export const partnerApplicationSchema = z.object({
   businessName: z.string().min(2, "Business name is required"),
