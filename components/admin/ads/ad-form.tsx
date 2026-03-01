@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ImageUpload } from "@/components/admin/image-upload";
+import { FieldError } from "@/components/admin/field-error";
+import { createAdSchema, updateAdSchema, validateForm } from "@/lib/validations/admin";
 import { toast } from "sonner";
 
 interface County {
@@ -40,6 +42,7 @@ interface AdFormProps {
 export function AdForm({ ad, counties }: AdFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [businessName, setBusinessName] = useState(ad?.business_name ?? "");
   const [imageUrl, setImageUrl] = useState(ad?.image_url ?? "");
   const [linkUrl, setLinkUrl] = useState(ad?.link_url ?? "");
@@ -57,9 +60,17 @@ export function AdForm({ ad, counties }: AdFormProps) {
 
   const isEdit = !!ad;
 
+  function clearError(field: string) {
+    setErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
 
     const data = {
       businessName,
@@ -72,6 +83,15 @@ export function AdForm({ ad, counties }: AdFormProps) {
       endDate,
     };
 
+    const schema = isEdit ? updateAdSchema : createAdSchema;
+    const result = validateForm(schema, data);
+    if (!result.success) {
+      setErrors(result.errors);
+      return;
+    }
+
+    setLoading(true);
+
     try {
       const url = isEdit ? `/api/admin/ads/${ad.id}` : "/api/admin/ads";
       const method = isEdit ? "PUT" : "POST";
@@ -82,10 +102,10 @@ export function AdForm({ ad, counties }: AdFormProps) {
         body: JSON.stringify(data),
       });
 
-      const result = await res.json();
+      const json = await res.json();
 
       if (!res.ok) {
-        toast.error(result.error || "Failed to save ad");
+        toast.error(json.error || "Failed to save ad");
         return;
       }
 
@@ -113,9 +133,13 @@ export function AdForm({ ad, counties }: AdFormProps) {
                 <Input
                   id="businessName"
                   value={businessName}
-                  onChange={(e) => setBusinessName(e.target.value)}
-                  required
+                  onChange={(e) => {
+                    setBusinessName(e.target.value);
+                    clearError("businessName");
+                  }}
+                  className={errors.businessName ? "border-destructive" : ""}
                 />
+                <FieldError error={errors.businessName} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="linkUrl">Link URL</Label>
@@ -123,18 +147,26 @@ export function AdForm({ ad, counties }: AdFormProps) {
                   id="linkUrl"
                   type="url"
                   value={linkUrl}
-                  onChange={(e) => setLinkUrl(e.target.value)}
+                  onChange={(e) => {
+                    setLinkUrl(e.target.value);
+                    clearError("linkUrl");
+                  }}
                   placeholder="https://..."
-                  required
+                  className={errors.linkUrl ? "border-destructive" : ""}
                 />
+                <FieldError error={errors.linkUrl} />
               </div>
               <div className="space-y-2">
                 <Label>Ad Image</Label>
                 <ImageUpload
                   value={imageUrl}
-                  onChange={setImageUrl}
+                  onChange={(val) => {
+                    setImageUrl(val);
+                    clearError("imageUrl");
+                  }}
                   folder="riverlands/ads"
                 />
+                <FieldError error={errors.imageUrl} />
               </div>
             </CardContent>
           </Card>
@@ -197,9 +229,13 @@ export function AdForm({ ad, counties }: AdFormProps) {
                     id="startDate"
                     type="date"
                     value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    required
+                    onChange={(e) => {
+                      setStartDate(e.target.value);
+                      clearError("startDate");
+                    }}
+                    className={errors.startDate ? "border-destructive" : ""}
                   />
+                  <FieldError error={errors.startDate} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="endDate">End Date</Label>
@@ -207,9 +243,13 @@ export function AdForm({ ad, counties }: AdFormProps) {
                     id="endDate"
                     type="date"
                     value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    required
+                    onChange={(e) => {
+                      setEndDate(e.target.value);
+                      clearError("endDate");
+                    }}
+                    className={errors.endDate ? "border-destructive" : ""}
                   />
+                  <FieldError error={errors.endDate} />
                 </div>
               </div>
             </CardContent>

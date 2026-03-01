@@ -1,95 +1,223 @@
-import { z } from "zod";
+import { z } from "zod/v4";
+
+// ── Helpers ─────────────────────────────────────────────────────
+
+const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+export function validateForm(
+  schema: z.ZodType,
+  data: unknown
+): { success: true } | { success: false; errors: Record<string, string> } {
+  const result = schema.safeParse(data);
+  if (result.success) return { success: true };
+
+  const errors: Record<string, string> = {};
+  for (const issue of result.error.issues) {
+    const key = issue.path[0]?.toString();
+    if (key && !errors[key]) errors[key] = issue.message;
+  }
+  return { success: false, errors };
+}
 
 // ── Posts ────────────────────────────────────────────────────────
 
-export const updatePostSchema = z.object({
-  title: z.string().min(1).max(200).optional(),
+export const createPostSchema = z.object({
+  title: z
+    .string()
+    .min(1, "Title is required")
+    .max(200, "Title must be 200 characters or less"),
   slug: z
     .string()
-    .min(1)
-    .max(200)
-    .regex(/^[a-z0-9-]+$/, "Slug must be lowercase alphanumeric with hyphens")
+    .min(1, "Slug is required")
+    .max(200, "Slug must be 200 characters or less")
+    .regex(slugRegex, "Slug must be lowercase alphanumeric with hyphens"),
+  content: z.string().min(1, "Content is required"),
+  excerpt: z
+    .string()
+    .min(1, "Excerpt is required")
+    .max(500, "Excerpt must be 500 characters or less"),
+  countyId: z.string().uuid("Please select a county"),
+  categoryId: z.string().uuid("Please select a category"),
+  status: z.enum(["draft", "published", "archived"]),
+  featuredImage: z.string().url("Must be a valid URL").nullable().optional(),
+  metaTitle: z
+    .string()
+    .max(70, "Meta title must be 70 characters or less")
+    .nullable()
     .optional(),
-  content: z.string().optional(),
-  excerpt: z.string().max(500).optional(),
-  featuredImage: z.string().url().nullable().optional(),
-  countyId: z.string().uuid().optional(),
-  categoryId: z.string().uuid().optional(),
-  status: z.enum(["draft", "published", "archived"]).optional(),
-  publishedAt: z.string().datetime().nullable().optional(),
-  scheduledFor: z.string().datetime().nullable().optional(),
-  metaTitle: z.string().max(70).nullable().optional(),
-  metaDescription: z.string().max(160).nullable().optional(),
+  metaDescription: z
+    .string()
+    .max(160, "Meta description must be 160 characters or less")
+    .nullable()
+    .optional(),
 });
 
+export const updatePostSchema = createPostSchema.partial().extend({
+  publishedAt: z.string().datetime().nullable().optional(),
+  scheduledFor: z.string().datetime().nullable().optional(),
+});
+
+export type CreatePostInput = z.infer<typeof createPostSchema>;
 export type UpdatePostInput = z.infer<typeof updatePostSchema>;
 
 // ── Events ───────────────────────────────────────────────────────
 
-export const updateEventSchema = z.object({
-  title: z.string().min(1).max(200).optional(),
-  description: z.string().max(2000).optional(),
-  location: z.string().max(200).optional(),
-  countyId: z.string().uuid().optional(),
-  category: z.string().max(50).optional(),
-  status: z.enum(["draft", "published", "cancelled"]).optional(),
-  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+const baseEventSchema = z.object({
+  title: z
+    .string()
+    .min(1, "Title is required")
+    .max(200, "Title must be 200 characters or less"),
+  description: z
+    .string()
+    .min(1, "Description is required")
+    .max(2000, "Description must be 2000 characters or less"),
+  location: z
+    .string()
+    .min(1, "Location is required")
+    .max(200, "Location must be 200 characters or less"),
+  countyId: z.string().uuid("Please select a county"),
+  category: z
+    .string()
+    .min(1, "Please select a category")
+    .max(50),
+  status: z.enum(["draft", "published", "cancelled"]),
+  startDate: z.string().min(1, "Start date is required"),
+  endDate: z.string().nullable().optional(),
   recurring: z.string().max(100).nullable().optional(),
-  externalLink: z.string().url().nullable().optional(),
-  featuredImage: z.string().url().nullable().optional(),
+  externalLink: z.string().url("Must be a valid URL").nullable().optional(),
+  featuredImage: z.string().url("Must be a valid URL").nullable().optional(),
 });
 
+export const createEventSchema = baseEventSchema.refine(
+  (data) => {
+    if (data.endDate && data.startDate) {
+      return new Date(data.endDate) > new Date(data.startDate);
+    }
+    return true;
+  },
+  { message: "End date must be after start date", path: ["endDate"] }
+);
+
+export const updateEventSchema = baseEventSchema.partial();
+
+export type CreateEventInput = z.infer<typeof createEventSchema>;
 export type UpdateEventInput = z.infer<typeof updateEventSchema>;
 
 // ── Partners ─────────────────────────────────────────────────────
 
-export const updatePartnerSchema = z.object({
-  name: z.string().min(1).max(200).optional(),
+export const createPartnerSchema = z.object({
+  name: z
+    .string()
+    .min(1, "Name is required")
+    .max(200, "Name must be 200 characters or less"),
   slug: z
     .string()
-    .min(1)
-    .max(200)
-    .regex(/^[a-z0-9-]+$/, "Slug must be lowercase alphanumeric with hyphens")
-    .optional(),
-  description: z.string().max(2000).optional(),
-  logo: z.string().url().nullable().optional(),
-  website: z.string().url().nullable().optional(),
-  email: z.string().email().nullable().optional(),
-  phone: z.string().max(20).nullable().optional(),
-  address: z.string().max(300).nullable().optional(),
-  countyId: z.string().uuid().optional(),
-  category: z.string().max(50).optional(),
-  isFeatured: z.boolean().optional(),
-  status: z.enum(["active", "inactive"]).optional(),
+    .min(1, "Slug is required")
+    .max(200, "Slug must be 200 characters or less")
+    .regex(slugRegex, "Slug must be lowercase alphanumeric with hyphens"),
+  description: z
+    .string()
+    .min(1, "Description is required")
+    .max(2000, "Description must be 2000 characters or less"),
+  logo: z.string().url("Must be a valid URL").nullable().optional(),
+  website: z.string().url("Must be a valid URL").nullable().optional(),
+  email: z.string().email("Must be a valid email").nullable().optional(),
+  phone: z.string().max(20, "Phone must be 20 characters or less").nullable().optional(),
+  address: z.string().max(300, "Address must be 300 characters or less").nullable().optional(),
+  countyId: z.string().uuid("Please select a county"),
+  category: z
+    .string()
+    .min(1, "Please select a category")
+    .max(50),
+  isFeatured: z.boolean(),
+  status: z.enum(["active", "inactive"]),
 });
 
+export const updatePartnerSchema = createPartnerSchema.partial();
+
+export type CreatePartnerInput = z.infer<typeof createPartnerSchema>;
 export type UpdatePartnerInput = z.infer<typeof updatePartnerSchema>;
 
 // ── Ads ──────────────────────────────────────────────────────────
 
-export const updateAdSchema = z.object({
-  businessName: z.string().min(1).max(200).optional(),
-  imageUrl: z.string().url().optional(),
-  linkUrl: z.string().url().optional(),
-  placementZone: z.string().max(50).optional(),
+const baseAdSchema = z.object({
+  businessName: z
+    .string()
+    .min(1, "Business name is required")
+    .max(200, "Business name must be 200 characters or less"),
+  imageUrl: z.string().url("Ad image is required"),
+  linkUrl: z.string().url("Link URL must be a valid URL"),
+  placementZone: z.string().min(1, "Placement zone is required").max(50),
   countyId: z.string().uuid().nullable().optional(),
-  isActive: z.boolean().optional(),
-  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  isActive: z.boolean(),
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Start date is required"),
+  endDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "End date is required"),
 });
 
+export const createAdSchema = baseAdSchema.refine(
+  (data) => {
+    return new Date(data.endDate) >= new Date(data.startDate);
+  },
+  { message: "End date must be on or after start date", path: ["endDate"] }
+);
+
+export const updateAdSchema = baseAdSchema.partial();
+
+export type CreateAdInput = z.infer<typeof createAdSchema>;
 export type UpdateAdInput = z.infer<typeof updateAdSchema>;
 
 // ── Users ────────────────────────────────────────────────────────
 
-export const updateUserSchema = z.object({
-  role: z.enum(["admin", "editor", "viewer"]).optional(),
-  assignedCounties: z.array(z.string()).optional(),
-  fullName: z.string().max(100).nullable().optional(),
+export const inviteUserSchema = z
+  .object({
+    email: z.string().email("Please enter a valid email address"),
+    fullName: z.string().max(100).optional(),
+    role: z.enum(["admin", "editor", "viewer"]),
+    assignedCounties: z.array(z.string()),
+  })
+  .refine(
+    (data) => {
+      if (data.role === "editor") return data.assignedCounties.length >= 1;
+      return true;
+    },
+    {
+      message: "Editors must be assigned at least one county",
+      path: ["assignedCounties"],
+    }
+  );
+
+export const updateUserSchema = z
+  .object({
+    role: z.enum(["admin", "editor", "viewer"]),
+    assignedCounties: z.array(z.string()),
+    fullName: z.string().max(100).nullable().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.role === "editor") return data.assignedCounties.length >= 1;
+      return true;
+    },
+    {
+      message: "Editors must be assigned at least one county",
+      path: ["assignedCounties"],
+    }
+  );
+
+export type InviteUserInput = z.infer<typeof inviteUserSchema>;
+export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+
+// ── Newsletter ──────────────────────────────────────────────────
+
+export const composeNewsletterSchema = z.object({
+  subject: z.string().min(1, "Subject is required"),
+  html: z.string().min(1, "Newsletter content is required"),
 });
 
-export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+export type ComposeNewsletterInput = z.infer<typeof composeNewsletterSchema>;
 
 // ── Site Settings ────────────────────────────────────────────────
 

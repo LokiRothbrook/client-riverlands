@@ -6,14 +6,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TiptapEditor } from "@/components/admin/editor/tiptap-editor";
+import { FieldError } from "@/components/admin/field-error";
+import { composeNewsletterSchema, validateForm } from "@/lib/validations/admin";
 import { counties } from "@/lib/counties";
 import { toast } from "sonner";
 
 export function ComposeForm() {
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [subject, setSubject] = useState("");
   const [html, setHtml] = useState("");
   const [targetCounties, setTargetCounties] = useState<string[]>([]);
+
+  function clearError(field: string) {
+    setErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
 
   function toggleCounty(slug: string) {
     setTargetCounties((prev) =>
@@ -24,8 +36,9 @@ export function ComposeForm() {
   }
 
   async function handleSend() {
-    if (!subject || !html) {
-      toast.error("Subject and content are required");
+    const result = validateForm(composeNewsletterSchema, { subject, html });
+    if (!result.success) {
+      setErrors(result.errors);
       return;
     }
 
@@ -50,17 +63,18 @@ export function ComposeForm() {
         }),
       });
 
-      const result = await res.json();
+      const json = await res.json();
 
       if (!res.ok) {
-        toast.error(result.error || "Failed to send newsletter");
+        toast.error(json.error || "Failed to send newsletter");
         return;
       }
 
-      toast.success(`Newsletter sent to ${result.sent} subscribers`);
+      toast.success(`Newsletter sent to ${json.sent} subscribers`);
       setSubject("");
       setHtml("");
       setTargetCounties([]);
+      setErrors({});
     } catch {
       toast.error("Something went wrong");
     } finally {
@@ -79,9 +93,14 @@ export function ComposeForm() {
           <Input
             id="subject"
             value={subject}
-            onChange={(e) => setSubject(e.target.value)}
+            onChange={(e) => {
+              setSubject(e.target.value);
+              clearError("subject");
+            }}
             placeholder="Newsletter subject"
+            className={errors.subject ? "border-destructive" : ""}
           />
+          <FieldError error={errors.subject} />
         </div>
 
         <div className="space-y-2">
@@ -108,9 +127,13 @@ export function ComposeForm() {
           <Label>Content</Label>
           <TiptapEditor
             content={html}
-            onChange={setHtml}
+            onChange={(val) => {
+              setHtml(val);
+              clearError("html");
+            }}
             placeholder="Write your newsletter..."
           />
+          <FieldError error={errors.html} />
         </div>
 
         <Button onClick={handleSend} disabled={loading}>

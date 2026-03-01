@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { z } from "zod/v4";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FieldError } from "@/components/admin/field-error";
 import { toast } from "sonner";
 
 const settingsGroups = [
@@ -14,7 +16,7 @@ const settingsGroups = [
     settings: [
       { key: "site_name", label: "Site Name", type: "text" },
       { key: "site_description", label: "Site Description", type: "textarea" },
-      { key: "site_url", label: "Site URL", type: "text" },
+      { key: "site_url", label: "Site URL", type: "url" },
     ],
   },
   {
@@ -63,19 +65,59 @@ const settingsGroups = [
   },
 ];
 
+function validateSettingValue(
+  value: string,
+  type: string
+): string | undefined {
+  if (!value) return undefined;
+  if (type === "email") {
+    const result = z.string().email().safeParse(value);
+    if (!result.success) return "Must be a valid email address";
+  }
+  if (type === "url") {
+    const result = z.string().url().safeParse(value);
+    if (!result.success) return "Must be a valid URL";
+  }
+  return undefined;
+}
+
 export function SettingsForm({
   initialSettings,
 }: {
   initialSettings: Record<string, string>;
 }) {
   const [values, setValues] = useState<Record<string, string>>(initialSettings);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
   function updateValue(key: string, value: string) {
     setValues((prev) => ({ ...prev, [key]: value }));
+    setErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
   }
 
   async function handleSave() {
+    // Validate all fields based on their type
+    const newErrors: Record<string, string> = {};
+    for (const group of settingsGroups) {
+      for (const setting of group.settings) {
+        const error = validateSettingValue(
+          values[setting.key] ?? "",
+          setting.type
+        );
+        if (error) newErrors[setting.key] = error;
+      }
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
     setLoading(true);
 
     const settings = Object.entries(values).map(([key, value]) => ({
@@ -123,11 +165,13 @@ export function SettingsForm({
                 ) : (
                   <Input
                     id={setting.key}
-                    type={setting.type}
+                    type={setting.type === "email" || setting.type === "url" ? "text" : setting.type}
                     value={values[setting.key] ?? ""}
                     onChange={(e) => updateValue(setting.key, e.target.value)}
+                    className={errors[setting.key] ? "border-destructive" : ""}
                   />
                 )}
+                <FieldError error={errors[setting.key]} />
               </div>
             ))}
           </CardContent>

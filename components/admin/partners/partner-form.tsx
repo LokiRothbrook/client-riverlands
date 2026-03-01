@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ImageUpload } from "@/components/admin/image-upload";
+import { FieldError } from "@/components/admin/field-error";
+import { createPartnerSchema, updatePartnerSchema, validateForm } from "@/lib/validations/admin";
 import { slugify } from "@/lib/slug";
 import { toast } from "sonner";
 
@@ -46,6 +48,7 @@ interface PartnerFormProps {
 export function PartnerForm({ partner, counties }: PartnerFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [name, setName] = useState(partner?.name ?? "");
   const [slug, setSlug] = useState(partner?.slug ?? "");
   const [description, setDescription] = useState(partner?.description ?? "");
@@ -61,6 +64,15 @@ export function PartnerForm({ partner, counties }: PartnerFormProps) {
 
   const isEdit = !!partner;
 
+  function clearError(field: string) {
+    setErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
+
   useEffect(() => {
     if (!isEdit && name) {
       setSlug(slugify(name));
@@ -69,22 +81,30 @@ export function PartnerForm({ partner, counties }: PartnerFormProps) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
 
     const data = {
       name,
       slug,
       description,
-      logo,
-      website,
-      email,
-      phone,
-      address,
+      logo: logo || null,
+      website: website || null,
+      email: email || null,
+      phone: phone || null,
+      address: address || null,
       countyId,
       category,
       isFeatured,
       status,
     };
+
+    const schema = isEdit ? updatePartnerSchema : createPartnerSchema;
+    const result = validateForm(schema, data);
+    if (!result.success) {
+      setErrors(result.errors);
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const url = isEdit
@@ -98,10 +118,10 @@ export function PartnerForm({ partner, counties }: PartnerFormProps) {
         body: JSON.stringify(data),
       });
 
-      const result = await res.json();
+      const json = await res.json();
 
       if (!res.ok) {
-        toast.error(result.error || "Failed to save partner");
+        toast.error(json.error || "Failed to save partner");
         return;
       }
 
@@ -130,18 +150,26 @@ export function PartnerForm({ partner, counties }: PartnerFormProps) {
                   <Input
                     id="name"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      clearError("name");
+                    }}
+                    className={errors.name ? "border-destructive" : ""}
                   />
+                  <FieldError error={errors.name} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="slug">Slug</Label>
                   <Input
                     id="slug"
                     value={slug}
-                    onChange={(e) => setSlug(e.target.value)}
-                    required
+                    onChange={(e) => {
+                      setSlug(e.target.value);
+                      clearError("slug");
+                    }}
+                    className={errors.slug ? "border-destructive" : ""}
                   />
+                  <FieldError error={errors.slug} />
                 </div>
               </div>
               <div className="space-y-2">
@@ -149,10 +177,14 @@ export function PartnerForm({ partner, counties }: PartnerFormProps) {
                 <Textarea
                   id="description"
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={(e) => {
+                    setDescription(e.target.value);
+                    clearError("description");
+                  }}
                   rows={4}
-                  required
+                  className={errors.description ? "border-destructive" : ""}
                 />
+                <FieldError error={errors.description} />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -161,16 +193,26 @@ export function PartnerForm({ partner, counties }: PartnerFormProps) {
                     id="email"
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      clearError("email");
+                    }}
+                    className={errors.email ? "border-destructive" : ""}
                   />
+                  <FieldError error={errors.email} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone</Label>
                   <Input
                     id="phone"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(e) => {
+                      setPhone(e.target.value);
+                      clearError("phone");
+                    }}
+                    className={errors.phone ? "border-destructive" : ""}
                   />
+                  <FieldError error={errors.phone} />
                 </div>
               </div>
               <div className="space-y-2">
@@ -179,16 +221,26 @@ export function PartnerForm({ partner, counties }: PartnerFormProps) {
                   id="website"
                   type="url"
                   value={website}
-                  onChange={(e) => setWebsite(e.target.value)}
+                  onChange={(e) => {
+                    setWebsite(e.target.value);
+                    clearError("website");
+                  }}
+                  className={errors.website ? "border-destructive" : ""}
                 />
+                <FieldError error={errors.website} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="address">Address</Label>
                 <Input
                   id="address"
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
+                  onChange={(e) => {
+                    setAddress(e.target.value);
+                    clearError("address");
+                  }}
+                  className={errors.address ? "border-destructive" : ""}
                 />
+                <FieldError error={errors.address} />
               </div>
             </CardContent>
           </Card>
@@ -214,8 +266,14 @@ export function PartnerForm({ partner, counties }: PartnerFormProps) {
               </div>
               <div className="space-y-2">
                 <Label>County</Label>
-                <Select value={countyId} onValueChange={setCountyId}>
-                  <SelectTrigger>
+                <Select
+                  value={countyId}
+                  onValueChange={(val) => {
+                    setCountyId(val);
+                    clearError("countyId");
+                  }}
+                >
+                  <SelectTrigger className={errors.countyId ? "border-destructive" : ""}>
                     <SelectValue placeholder="Select county" />
                   </SelectTrigger>
                   <SelectContent>
@@ -226,11 +284,18 @@ export function PartnerForm({ partner, counties }: PartnerFormProps) {
                     ))}
                   </SelectContent>
                 </Select>
+                <FieldError error={errors.countyId} />
               </div>
               <div className="space-y-2">
                 <Label>Category</Label>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger>
+                <Select
+                  value={category}
+                  onValueChange={(val) => {
+                    setCategory(val);
+                    clearError("category");
+                  }}
+                >
+                  <SelectTrigger className={errors.category ? "border-destructive" : ""}>
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
@@ -243,6 +308,7 @@ export function PartnerForm({ partner, counties }: PartnerFormProps) {
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
+                <FieldError error={errors.category} />
               </div>
               <div className="flex items-center gap-2">
                 <input

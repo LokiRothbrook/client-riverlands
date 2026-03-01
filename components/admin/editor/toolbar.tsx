@@ -11,7 +11,7 @@ interface ToolbarProps {
 export function EditorToolbar({ editor }: ToolbarProps) {
   if (!editor) return null;
 
-  const buttonClass = "h-8 w-8 p-0 text-xs";
+  const buttonClass = "h-8 px-2 text-xs";
 
   return (
     <div className="flex flex-wrap gap-1 border-b p-2">
@@ -121,6 +121,17 @@ export function EditorToolbar({ editor }: ToolbarProps) {
         title="Blockquote"
       >
         &ldquo;
+      </Button>
+
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className={buttonClass}
+        onClick={() => editor.chain().focus().setHorizontalRule().run()}
+        title="Horizontal Rule"
+      >
+        ―
       </Button>
 
       <div className="mx-1 w-px bg-border" />

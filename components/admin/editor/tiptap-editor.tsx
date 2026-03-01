@@ -20,6 +20,7 @@ export function TiptapEditor({
   placeholder = "Start writing...",
 }: TiptapEditorProps) {
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit,
       Underline,

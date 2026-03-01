@@ -17,6 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { FieldError } from "@/components/admin/field-error";
+import { updateUserSchema, validateForm } from "@/lib/validations/admin";
 import { counties } from "@/lib/counties";
 import { toast } from "sonner";
 
@@ -36,10 +38,20 @@ interface EditUserDialogProps {
 export function EditUserDialog({ user, onClose }: EditUserDialogProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [role, setRole] = useState(user.role);
   const [assignedCounties, setAssignedCounties] = useState<string[]>(
     user.assigned_counties
   );
+
+  function clearError(field: string) {
+    setErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
 
   function toggleCounty(slug: string) {
     setAssignedCounties((prev) =>
@@ -47,15 +59,24 @@ export function EditUserDialog({ user, onClose }: EditUserDialogProps) {
         ? prev.filter((c) => c !== slug)
         : [...prev, slug]
     );
+    clearError("assignedCounties");
   }
 
   async function handleSave() {
+    const data = { role, assignedCounties };
+
+    const result = validateForm(updateUserSchema, data);
+    if (!result.success) {
+      setErrors(result.errors);
+      return;
+    }
+
     setLoading(true);
 
     const res = await fetch(`/api/admin/users/${user.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ role, assignedCounties }),
+      body: JSON.stringify(data),
     });
 
     if (res.ok) {
@@ -82,7 +103,13 @@ export function EditUserDialog({ user, onClose }: EditUserDialogProps) {
 
           <div className="space-y-2">
             <Label>Role</Label>
-            <Select value={role} onValueChange={setRole}>
+            <Select
+              value={role}
+              onValueChange={(val) => {
+                setRole(val);
+                clearError("assignedCounties");
+              }}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -113,6 +140,7 @@ export function EditUserDialog({ user, onClose }: EditUserDialogProps) {
                   </label>
                 ))}
               </div>
+              <FieldError error={errors.assignedCounties} />
             </div>
           )}
 

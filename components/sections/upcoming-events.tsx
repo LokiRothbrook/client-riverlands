@@ -6,16 +6,16 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Calendar03Icon, Location01Icon } from "@hugeicons/core-free-icons";
 import { getUpcomingEvents } from "@/lib/queries";
 
-function formatDate(isoDate: string): string {
-  return new Date(isoDate + "T00:00:00").toLocaleDateString("en-US", {
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
   });
 }
 
-function getDateParts(isoDate: string): { month: string; day: string } {
-  const d = new Date(isoDate + "T00:00:00");
+function getDateParts(dateStr: string): { month: string; day: string } {
+  const d = new Date(dateStr);
   return {
     month: d.toLocaleDateString("en-US", { month: "short" }),
     day: d.getDate().toString(),

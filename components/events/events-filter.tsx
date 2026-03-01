@@ -16,16 +16,16 @@ import {
 } from "@hugeicons/core-free-icons";
 import type { PublishedEvent } from "@/lib/queries";
 
-function formatDate(isoDate: string): string {
-  return new Date(isoDate + "T00:00:00").toLocaleDateString("en-US", {
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
   });
 }
 
-function getDateParts(isoDate: string): { month: string; day: string } {
-  const d = new Date(isoDate + "T00:00:00");
+function getDateParts(dateStr: string): { month: string; day: string } {
+  const d = new Date(dateStr);
   return {
     month: d.toLocaleDateString("en-US", { month: "short" }),
     day: d.getDate().toString(),
@@ -72,7 +72,7 @@ function MiniCalendar({ events, selectedDate, onSelectDate }: MiniCalendarProps)
   // Index events by day number in this month
   const eventsByDay: Record<number, PublishedEvent[]> = {};
   events.forEach((event) => {
-    const d = new Date(event.startDate + "T00:00:00");
+    const d = new Date(event.startDate);
     if (d.getFullYear() === calYear && d.getMonth() === calMonth) {
       const day = d.getDate();
       if (!eventsByDay[day]) eventsByDay[day] = [];
@@ -206,7 +206,7 @@ export function EventsFilter({ events }: { events: PublishedEvent[] }) {
   // Then filter by selected date if any
   const filteredEvents = selectedDate
     ? countyFilteredEvents.filter((e) => {
-        const eventDate = new Date(e.startDate + "T00:00:00");
+        const eventDate = new Date(e.startDate);
         return isSameDay(eventDate, selectedDate);
       })
     : countyFilteredEvents;

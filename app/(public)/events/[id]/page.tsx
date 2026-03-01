@@ -44,8 +44,8 @@ export async function generateMetadata({
   };
 }
 
-function formatDate(isoDate: string): string {
-  return new Date(isoDate + "T00:00:00").toLocaleDateString("en-US", {
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
@@ -53,8 +53,8 @@ function formatDate(isoDate: string): string {
   });
 }
 
-function formatShortDate(isoDate: string): string {
-  return new Date(isoDate + "T00:00:00").toLocaleDateString("en-US", {
+function formatShortDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -73,7 +73,7 @@ function getGoogleCalendarUrl(event: {
     ? event.endDate.replace(/-/g, "")
     : // If no end date, set to next day (all-day event)
       new Date(
-        new Date(event.startDate + "T00:00:00").getTime() + 86400000
+        new Date(event.startDate).getTime() + 86400000
       )
         .toISOString()
         .split("T")[0]
@@ -102,7 +102,7 @@ function getICalContent(event: {
   const end = event.endDate
     ? event.endDate.replace(/-/g, "")
     : new Date(
-        new Date(event.startDate + "T00:00:00").getTime() + 86400000
+        new Date(event.startDate).getTime() + 86400000
       )
         .toISOString()
         .split("T")[0]

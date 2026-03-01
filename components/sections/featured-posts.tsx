@@ -10,8 +10,8 @@ import {
 } from "@/components/ui/card";
 import { getPublishedPosts } from "@/lib/queries";
 
-function formatDate(isoDate: string): string {
-  return new Date(isoDate + "T00:00:00").toLocaleDateString("en-US", {
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",

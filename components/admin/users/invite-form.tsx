@@ -13,14 +13,28 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FieldError } from "@/components/admin/field-error";
+import { inviteUserSchema, validateForm } from "@/lib/validations/admin";
 import { counties } from "@/lib/counties";
 import { toast } from "sonner";
 
 export function InviteForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
   const [role, setRole] = useState("editor");
   const [assignedCounties, setAssignedCounties] = useState<string[]>([]);
+
+  function clearError(field: string) {
+    setErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
 
   function toggleCounty(slug: string) {
     setAssignedCounties((prev) =>
@@ -28,20 +42,26 @@ export function InviteForm() {
         ? prev.filter((c) => c !== slug)
         : [...prev, slug]
     );
+    clearError("assignedCounties");
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setLoading(true);
-
-    const formData = new FormData(e.currentTarget);
 
     const data = {
-      email: formData.get("email") as string,
-      fullName: formData.get("fullName") as string,
+      email,
+      fullName: fullName || undefined,
       role,
       assignedCounties: role === "editor" ? assignedCounties : [],
     };
+
+    const result = validateForm(inviteUserSchema, data);
+    if (!result.success) {
+      setErrors(result.errors);
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const res = await fetch("/api/admin/users", {
@@ -50,10 +70,10 @@ export function InviteForm() {
         body: JSON.stringify(data),
       });
 
-      const result = await res.json();
+      const json = await res.json();
 
       if (!res.ok) {
-        toast.error(result.error || "Failed to invite user");
+        toast.error(json.error || "Failed to invite user");
         return;
       }
 
@@ -80,21 +100,35 @@ export function InviteForm() {
               id="email"
               name="email"
               type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                clearError("email");
+              }}
               placeholder="user@example.com"
-              required
+              className={errors.email ? "border-destructive" : ""}
             />
+            <FieldError error={errors.email} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="fullName">Full Name</Label>
             <Input
               id="fullName"
               name="fullName"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
               placeholder="Jane Doe"
             />
           </div>
           <div className="space-y-2">
             <Label>Role</Label>
-            <Select value={role} onValueChange={setRole}>
+            <Select
+              value={role}
+              onValueChange={(val) => {
+                setRole(val);
+                clearError("assignedCounties");
+              }}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -125,6 +159,7 @@ export function InviteForm() {
                   </label>
                 ))}
               </div>
+              <FieldError error={errors.assignedCounties} />
             </div>
           )}
 

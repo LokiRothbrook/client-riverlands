@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ImageUpload } from "@/components/admin/image-upload";
+import { FieldError } from "@/components/admin/field-error";
+import { createEventSchema, updateEventSchema, validateForm } from "@/lib/validations/admin";
 import { toast } from "sonner";
 
 interface County {
@@ -44,6 +46,7 @@ interface EventFormProps {
 export function EventForm({ event, counties }: EventFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [title, setTitle] = useState(event?.title ?? "");
   const [description, setDescription] = useState(event?.description ?? "");
   const [location, setLocation] = useState(event?.location ?? "");
@@ -66,9 +69,17 @@ export function EventForm({ event, counties }: EventFormProps) {
 
   const isEdit = !!event;
 
+  function clearError(field: string) {
+    setErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
 
     const data = {
       title,
@@ -77,11 +88,27 @@ export function EventForm({ event, counties }: EventFormProps) {
       countyId,
       category,
       status,
-      startDate: new Date(startDate).toISOString(),
-      endDate: endDate ? new Date(endDate).toISOString() : null,
+      startDate,
+      endDate: endDate || null,
       recurring: recurring || null,
       externalLink: externalLink || null,
-      featuredImage,
+      featuredImage: featuredImage || null,
+    };
+
+    const schema = isEdit ? updateEventSchema : createEventSchema;
+    const result = validateForm(schema, data);
+    if (!result.success) {
+      setErrors(result.errors);
+      return;
+    }
+
+    setLoading(true);
+
+    // Convert dates to ISO for the API
+    const apiData = {
+      ...data,
+      startDate: new Date(startDate).toISOString(),
+      endDate: endDate ? new Date(endDate).toISOString() : null,
     };
 
     try {
@@ -93,13 +120,13 @@ export function EventForm({ event, counties }: EventFormProps) {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(apiData),
       });
 
-      const result = await res.json();
+      const json = await res.json();
 
       if (!res.ok) {
-        toast.error(result.error || "Failed to save event");
+        toast.error(json.error || "Failed to save event");
         return;
       }
 
@@ -127,31 +154,43 @@ export function EventForm({ event, counties }: EventFormProps) {
                 <Input
                   id="title"
                   value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onChange={(e) => {
+                    setTitle(e.target.value);
+                    clearError("title");
+                  }}
                   placeholder="Event title"
-                  required
+                  className={errors.title ? "border-destructive" : ""}
                 />
+                <FieldError error={errors.title} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={(e) => {
+                    setDescription(e.target.value);
+                    clearError("description");
+                  }}
                   placeholder="Event description"
                   rows={5}
-                  required
+                  className={errors.description ? "border-destructive" : ""}
                 />
+                <FieldError error={errors.description} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="location">Location</Label>
                 <Input
                   id="location"
                   value={location}
-                  onChange={(e) => setLocation(e.target.value)}
+                  onChange={(e) => {
+                    setLocation(e.target.value);
+                    clearError("location");
+                  }}
                   placeholder="Event venue / address"
-                  required
+                  className={errors.location ? "border-destructive" : ""}
                 />
+                <FieldError error={errors.location} />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -160,9 +199,13 @@ export function EventForm({ event, counties }: EventFormProps) {
                     id="startDate"
                     type="datetime-local"
                     value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    required
+                    onChange={(e) => {
+                      setStartDate(e.target.value);
+                      clearError("startDate");
+                    }}
+                    className={errors.startDate ? "border-destructive" : ""}
                   />
+                  <FieldError error={errors.startDate} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="endDate">End Date & Time</Label>
@@ -170,8 +213,13 @@ export function EventForm({ event, counties }: EventFormProps) {
                     id="endDate"
                     type="datetime-local"
                     value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
+                    onChange={(e) => {
+                      setEndDate(e.target.value);
+                      clearError("endDate");
+                    }}
+                    className={errors.endDate ? "border-destructive" : ""}
                   />
+                  <FieldError error={errors.endDate} />
                 </div>
               </div>
               <div className="space-y-2">
@@ -180,9 +228,14 @@ export function EventForm({ event, counties }: EventFormProps) {
                   id="externalLink"
                   type="url"
                   value={externalLink}
-                  onChange={(e) => setExternalLink(e.target.value)}
+                  onChange={(e) => {
+                    setExternalLink(e.target.value);
+                    clearError("externalLink");
+                  }}
                   placeholder="https://..."
+                  className={errors.externalLink ? "border-destructive" : ""}
                 />
+                <FieldError error={errors.externalLink} />
               </div>
             </CardContent>
           </Card>
@@ -209,8 +262,14 @@ export function EventForm({ event, counties }: EventFormProps) {
               </div>
               <div className="space-y-2">
                 <Label>County</Label>
-                <Select value={countyId} onValueChange={setCountyId}>
-                  <SelectTrigger>
+                <Select
+                  value={countyId}
+                  onValueChange={(val) => {
+                    setCountyId(val);
+                    clearError("countyId");
+                  }}
+                >
+                  <SelectTrigger className={errors.countyId ? "border-destructive" : ""}>
                     <SelectValue placeholder="Select county" />
                   </SelectTrigger>
                   <SelectContent>
@@ -221,11 +280,18 @@ export function EventForm({ event, counties }: EventFormProps) {
                     ))}
                   </SelectContent>
                 </Select>
+                <FieldError error={errors.countyId} />
               </div>
               <div className="space-y-2">
                 <Label>Category</Label>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger>
+                <Select
+                  value={category}
+                  onValueChange={(val) => {
+                    setCategory(val);
+                    clearError("category");
+                  }}
+                >
+                  <SelectTrigger className={errors.category ? "border-destructive" : ""}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -237,6 +303,7 @@ export function EventForm({ event, counties }: EventFormProps) {
                     <SelectItem value="music">Music</SelectItem>
                   </SelectContent>
                 </Select>
+                <FieldError error={errors.category} />
               </div>
               <div className="space-y-2">
                 <Label>Recurring</Label>
