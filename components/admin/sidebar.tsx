@@ -18,6 +18,7 @@ import {
   CheckListIcon,
   Location01Icon,
   Tag01Icon,
+  Image01Icon,
 } from "@hugeicons/core-free-icons";
 
 const navItems = [
@@ -31,6 +32,7 @@ const navItems = [
     icon: CheckListIcon,
   },
   { href: "/admin/ads", label: "Ad Placements", icon: MegaphoneIcon },
+  { href: "/admin/assets", label: "Assets", icon: Image01Icon },
   { href: "/admin/users", label: "Users", icon: UserGroupIcon, adminOnly: true },
   { href: "/admin/newsletter", label: "Newsletter", icon: Mail01Icon },
   { href: "/admin/messages", label: "Messages", icon: UserIcon },

@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireApiRole } from "@/lib/auth";
 import { updatePostSchema } from "@/lib/validations/admin";
+import { cleanupImages, cleanupReplacedImage } from "@/lib/media-cleanup";
+import { collectPostImages } from "@/lib/media-utils";
 
 export async function GET(
   _request: NextRequest,
@@ -84,6 +86,20 @@ export async function PUT(
     }
 
     const body = parseResult.data;
+
+    // Clean up old featured image if it's being replaced
+    if (body.featuredImage !== undefined) {
+      const { data: existing } = await supabase
+        .from("posts")
+        .select("featured_image")
+        .eq("id", id)
+        .single();
+
+      if (existing) {
+        cleanupReplacedImage(supabase, existing.featured_image, body.featuredImage);
+      }
+    }
+
     const updateData: Record<string, unknown> = {};
     if (body.title !== undefined) updateData.title = body.title;
     if (body.slug !== undefined) updateData.slug = body.slug;
@@ -151,10 +167,22 @@ export async function DELETE(
     const { error: authError } = await requireApiRole(supabase, ["admin"]);
     if (authError) return authError;
 
+    // Fetch post to collect images before deleting
+    const { data: post } = await supabase
+      .from("posts")
+      .select("featured_image, content")
+      .eq("id", id)
+      .single();
+
     const { error } = await supabase.from("posts").delete().eq("id", id);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // Clean up images (fire-and-forget)
+    if (post) {
+      cleanupImages(supabase, collectPostImages(post));
     }
 
     return NextResponse.json({ success: true });

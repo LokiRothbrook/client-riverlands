@@ -458,6 +458,46 @@ export type Database = {
         };
         Relationships: [];
       };
+      media: {
+        Row: {
+          id: string;
+          url: string;
+          public_id: string;
+          filename: string;
+          width: number | null;
+          height: number | null;
+          size_bytes: number | null;
+          format: string | null;
+          folder: string;
+          alt_text: string | null;
+          uploaded_by: string;
+          created_at: string;
+        };
+        Insert: {
+          url: string;
+          public_id: string;
+          filename: string;
+          width?: number | null;
+          height?: number | null;
+          size_bytes?: number | null;
+          format?: string | null;
+          folder?: string;
+          alt_text?: string | null;
+          uploaded_by: string;
+        };
+        Update: {
+          alt_text?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "media_uploaded_by_fkey";
+            columns: ["uploaded_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       site_settings: {
         Row: {
           id: string;

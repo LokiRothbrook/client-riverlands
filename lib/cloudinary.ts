@@ -24,7 +24,7 @@ export function getCloudinaryUrl(
 export async function uploadImage(
   file: Buffer | string,
   options?: { folder?: string; publicId?: string }
-): Promise<{ url: string; publicId: string; width: number; height: number }> {
+): Promise<{ url: string; publicId: string; width: number; height: number; bytes: number; format: string }> {
   const folder = options?.folder ?? "riverlands";
 
   const result = await new Promise<{
@@ -32,6 +32,8 @@ export async function uploadImage(
     public_id: string;
     width: number;
     height: number;
+    bytes: number;
+    format: string;
   }>((resolve, reject) => {
     const uploadOptions: Record<string, unknown> = {
       folder,
@@ -63,11 +65,29 @@ export async function uploadImage(
     publicId: result.public_id,
     width: result.width,
     height: result.height,
+    bytes: result.bytes,
+    format: result.format,
   };
 }
 
 export async function deleteImage(publicId: string): Promise<void> {
   await cloudinary.uploader.destroy(publicId);
+}
+
+export async function deleteImages(publicIds: string[]): Promise<void> {
+  if (publicIds.length === 0) return;
+  await Promise.all(publicIds.map((id) => cloudinary.uploader.destroy(id)));
+}
+
+export function extractPublicId(url: string): string | null {
+  try {
+    const match = url.match(
+      /\/(?:image|video|raw)\/upload\/(?:v\d+\/)?(.+?)(?:\.[a-z]+)?$/i
+    );
+    return match?.[1] ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export { cloudinary };

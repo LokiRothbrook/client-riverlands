@@ -157,3 +157,70 @@
   height: 0;
   color: var(--muted-foreground);
 }
+
+/* TipTap table styles */
+.tiptap table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+}
+
+.tiptap th,
+.tiptap td {
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.75rem;
+  min-width: 80px;
+  vertical-align: top;
+}
+
+.tiptap th {
+  background: var(--muted);
+  font-weight: 600;
+  text-align: left;
+}
+
+.tiptap .selectedCell {
+  background: oklch(0.55 0.10 230 / 0.1);
+}
+
+/* Slash command dropdown */
+.slash-command-list {
+  background: var(--popover);
+  color: var(--popover-foreground);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  padding: 0.25rem;
+  max-height: 280px;
+  overflow-y: auto;
+  min-width: 200px;
+}
+
+.slash-command-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.125rem;
+  width: 100%;
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.375rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.slash-command-item:hover,
+.slash-command-item.is-selected {
+  background: var(--accent);
+}
+
+.slash-command-title {
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.slash-command-desc {
+  font-size: 0.6875rem;
+  color: var(--muted-foreground);
+}

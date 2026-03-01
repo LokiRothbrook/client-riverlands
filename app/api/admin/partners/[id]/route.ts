@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireApiRole } from "@/lib/auth";
 import { updatePartnerSchema } from "@/lib/validations/admin";
+import { cleanupImages, cleanupReplacedImage } from "@/lib/media-cleanup";
 
 export async function GET(
   _request: NextRequest,
@@ -63,7 +64,20 @@ export async function PUT(
     if (body.slug !== undefined) updateData.slug = body.slug;
     if (body.description !== undefined)
       updateData.description = body.description;
-    if (body.logo !== undefined) updateData.logo = body.logo || null;
+    if (body.logo !== undefined) {
+      // Clean up old logo if being replaced
+      const { data: existing } = await supabase
+        .from("partners")
+        .select("logo")
+        .eq("id", id)
+        .single();
+
+      if (existing) {
+        cleanupReplacedImage(supabase, existing.logo, body.logo);
+      }
+
+      updateData.logo = body.logo || null;
+    }
     if (body.website !== undefined)
       updateData.website = body.website || null;
     if (body.email !== undefined) updateData.email = body.email || null;
@@ -106,10 +120,22 @@ export async function DELETE(
     const { error: authError } = await requireApiRole(supabase, ["admin"]);
     if (authError) return authError;
 
+    // Fetch partner to get logo before deleting
+    const { data: partner } = await supabase
+      .from("partners")
+      .select("logo")
+      .eq("id", id)
+      .single();
+
     const { error } = await supabase.from("partners").delete().eq("id", id);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // Clean up logo (fire-and-forget)
+    if (partner?.logo) {
+      cleanupImages(supabase, [partner.logo]);
     }
 
     return NextResponse.json({ success: true });

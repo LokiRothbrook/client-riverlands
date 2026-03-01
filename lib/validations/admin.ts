@@ -274,6 +274,17 @@ export const composeNewsletterSchema = z.object({
 
 export type ComposeNewsletterInput = z.infer<typeof composeNewsletterSchema>;
 
+// ── Media ────────────────────────────────────────────────────────
+
+export const mediaFilterSchema = z.object({
+  search: z.string().max(200).optional(),
+  folder: z.string().max(100).optional(),
+  page: z.coerce.number().int().min(1).optional().default(1),
+  perPage: z.coerce.number().int().min(1).max(100).optional().default(24),
+});
+
+export type MediaFilterInput = z.infer<typeof mediaFilterSchema>;
+
 // ── Site Settings ────────────────────────────────────────────────
 
 export const updateSettingsSchema = z.object({
