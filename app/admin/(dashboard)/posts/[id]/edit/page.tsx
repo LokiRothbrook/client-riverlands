@@ -23,13 +23,10 @@ export default async function EditPostPage({
   if (!post) notFound();
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Edit Post</h2>
-      <PostForm
-        post={post}
-        counties={counties ?? []}
-        categories={categories ?? []}
-      />
-    </div>
+    <PostForm
+      post={post}
+      counties={counties ?? []}
+      categories={categories ?? []}
+    />
   );
 }

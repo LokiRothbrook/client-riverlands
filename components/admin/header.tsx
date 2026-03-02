@@ -72,6 +72,9 @@ export function AdminHeader() {
         <h1 className="text-lg font-semibold">{pageTitle}</h1>
       </div>
 
+      {/* Post-form actions are portaled here by PostForm */}
+      <div id="admin-header-post-actions" className="flex items-center" />
+
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-9 w-9 rounded-full">

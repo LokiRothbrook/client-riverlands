@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -13,13 +16,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TiptapEditor } from "@/components/admin/editor/tiptap-editor";
 import { ImageUpload } from "@/components/admin/image-upload";
-import { FieldError } from "@/components/admin/field-error";
-import { createPostSchema, updatePostSchema, validateForm } from "@/lib/validations/admin";
 import { slugify } from "@/lib/slug";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  ArrowLeft01Icon,
+  EyeIcon,
+  ViewOffIcon,
+  ViewSidebarRightIcon,
+} from "@hugeicons/core-free-icons";
+
+type SaveStatus = "idle" | "pending" | "saving" | "saved" | "error";
+type PostStatus = "draft" | "published" | "archived";
 
 interface County {
   id: string;
@@ -55,315 +66,590 @@ interface PostFormProps {
 
 export function PostForm({ post, counties, categories }: PostFormProps) {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Post ID — updated after first auto-create
+  const postIdRef = useRef<string | null>(post?.id ?? null);
+  const [postId, setPostId] = useState<string | null>(post?.id ?? null);
+
+  // Content fields
   const [title, setTitle] = useState(post?.title ?? "");
   const [slug, setSlug] = useState(post?.slug ?? "");
   const [content, setContent] = useState(post?.content ?? "");
   const [excerpt, setExcerpt] = useState(post?.excerpt ?? "");
-  const [featuredImage, setFeaturedImage] = useState(
-    post?.featured_image ?? ""
+  const [featuredImage, setFeaturedImage] = useState(post?.featured_image ?? "");
+  const [countyId, setCountyId] = useState(post?.county_id ?? counties[0]?.id ?? "");
+  const [categoryId, setCategoryId] = useState(
+    post?.category_id ?? categories[0]?.id ?? ""
   );
-  const [countyId, setCountyId] = useState(post?.county_id ?? "");
-  const [categoryId, setCategoryId] = useState(post?.category_id ?? "");
   const [isFeatured, setIsFeatured] = useState(post?.is_featured ?? false);
   const [showCoverImage, setShowCoverImage] = useState(
     post?.show_cover_image ?? true
   );
-  const [status, setStatus] = useState(post?.status ?? "draft");
+  const [status, setStatus] = useState<PostStatus>(
+    (post?.status as PostStatus) ?? "draft"
+  );
   const [metaTitle, setMetaTitle] = useState(post?.meta_title ?? "");
   const [metaDescription, setMetaDescription] = useState(
     post?.meta_description ?? ""
   );
+  const [slugEdited, setSlugEdited] = useState(!!post);
 
-  const isEdit = !!post;
+  // UI state
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const [previewMode, setPreviewMode] = useState(false);
+  // Lazy init from localStorage — no effect needed
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("admin-post-sidebar-open") !== "false";
+  });
 
-  function clearError(field: string) {
-    setErrors((prev) => {
-      if (!prev[field]) return prev;
-      const next = { ...prev };
-      delete next[field];
-      return next;
-    });
-  }
-
+  // Ref of latest form values for use in async callbacks (avoids stale closures)
+  const currentRef = useRef({
+    title,
+    slug,
+    content,
+    excerpt,
+    featuredImage,
+    countyId,
+    categoryId,
+    isFeatured,
+    showCoverImage,
+    status,
+    metaTitle,
+    metaDescription,
+  });
   useEffect(() => {
-    if (!isEdit && title) {
-      setSlug(slugify(title));
-    }
-  }, [title, isEdit]);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-
-    const data = {
+    currentRef.current = {
       title,
       slug,
       content,
       excerpt,
-      isFeatured,
-      showCoverImage,
-      featuredImage: featuredImage || null,
+      featuredImage,
       countyId,
       categoryId,
+      isFeatured,
+      showCoverImage,
       status,
-      metaTitle: metaTitle || null,
-      metaDescription: metaDescription || null,
+      metaTitle,
+      metaDescription,
     };
+  });
 
-    const schema = isEdit ? updatePostSchema : createPostSchema;
-    const result = validateForm(schema, data);
-    if (!result.success) {
-      setErrors(result.errors);
-      return;
-    }
+  // Auto-save debounce timer ref
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    setLoading(true);
+  function toggleSidebar() {
+    setSidebarOpen((prev) => {
+      const next = !prev;
+      localStorage.setItem("admin-post-sidebar-open", String(next));
+      return next;
+    });
+  }
 
+  // ── Core save function ─────────────────────────────────────────
+  async function performSave(overrideStatus?: PostStatus): Promise<boolean> {
+    const c = currentRef.current;
+    const saveWith = overrideStatus ?? c.status;
+
+    if (!c.title.trim() || !c.countyId || !c.categoryId) return false;
+
+    setSaveStatus("saving");
     try {
-      const url = isEdit ? `/api/admin/posts/${post.id}` : "/api/admin/posts";
-      const method = isEdit ? "PUT" : "POST";
+      const body = {
+        title: c.title,
+        slug: c.slug || slugify(c.title),
+        content: c.content || "",
+        excerpt: c.excerpt || "",
+        featuredImage: c.featuredImage || null,
+        countyId: c.countyId,
+        categoryId: c.categoryId,
+        isFeatured: c.isFeatured,
+        showCoverImage: c.showCoverImage,
+        metaTitle: c.metaTitle || null,
+        metaDescription: c.metaDescription || null,
+        status: saveWith,
+      };
+
+      const id = postIdRef.current;
+      const url = id ? `/api/admin/posts/${id}` : "/api/admin/posts";
+      const method = id ? "PUT" : "POST";
 
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(body),
       });
 
       const json = await res.json();
 
       if (!res.ok) {
-        toast.error(json.error || "Failed to save post");
-        return;
+        setSaveStatus("error");
+        return false;
       }
 
-      toast.success(isEdit ? "Post updated" : "Post created");
-      router.push("/admin/posts");
-      router.refresh();
+      // After first creation, update ID and URL without a full navigation
+      if (!postIdRef.current && json.id) {
+        postIdRef.current = json.id;
+        setPostId(json.id);
+        window.history.replaceState({}, "", `/admin/posts/${json.id}/edit`);
+      }
+
+      setSaveStatus("saved");
+      setTimeout(
+        () => setSaveStatus((s) => (s === "saved" ? "idle" : s)),
+        3000
+      );
+      return true;
     } catch {
-      toast.error("Something went wrong");
-    } finally {
-      setLoading(false);
+      setSaveStatus("error");
+      return false;
     }
   }
 
+  // Keep a ref to always-fresh performSave for the debounce timeout
+  const performSaveRef = useRef(performSave);
+  useEffect(() => {
+    performSaveRef.current = performSave;
+  });
+
+  // Mark dirty — called from field onChange handlers to update the save indicator
+  function markDirty() {
+    setSaveStatus("pending");
+  }
+
+  // Title change handler — also auto-generates slug for new posts
+  function handleTitleChange(value: string) {
+    setTitle(value);
+    if (!slugEdited && value) setSlug(slugify(value));
+    markDirty();
+  }
+
+  // Auto-save effect — schedules the API call after a pause in typing
+  useEffect(() => {
+    if (!title.trim()) return;
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      performSaveRef.current();
+    }, 2000);
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [
+    title,
+    slug,
+    content,
+    excerpt,
+    featuredImage,
+    countyId,
+    categoryId,
+    isFeatured,
+    showCoverImage,
+    metaTitle,
+    metaDescription,
+  ]);
+
+  // ── Status action buttons ──────────────────────────────────────
+  async function handlePublish() {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setStatus("published");
+    const ok = await performSaveRef.current("published");
+    if (ok) toast.success("Post published");
+  }
+
+  async function handleUnpublish() {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setStatus("draft");
+    const ok = await performSaveRef.current("draft");
+    if (ok) toast.success("Post moved back to drafts");
+  }
+
+  async function handleArchive() {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setStatus("archived");
+    const ok = await performSaveRef.current("archived");
+    if (ok) toast.success("Post archived");
+  }
+
+  // ── Preview helpers ────────────────────────────────────────────
+  const selectedCounty = counties.find((c) => c.id === countyId);
+  const selectedCategory = categories.find((c) => c.id === categoryId);
+
+  const statusVariant: Record<PostStatus, "secondary" | "default" | "outline"> =
+    {
+      draft: "secondary",
+      published: "default",
+      archived: "outline",
+    };
+
+  // ── Render ─────────────────────────────────────────────────────
+  const headerSlot =
+    typeof document !== "undefined"
+      ? document.getElementById("admin-header-post-actions")
+      : null;
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Content</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Title</Label>
-                <Input
-                  id="title"
-                  value={title}
-                  onChange={(e) => {
-                    setTitle(e.target.value);
-                    clearError("title");
-                  }}
-                  placeholder="Post title"
-                  className={errors.title ? "border-destructive" : ""}
-                />
-                <FieldError error={errors.title} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="slug">Slug</Label>
-                <Input
-                  id="slug"
-                  value={slug}
-                  onChange={(e) => {
-                    setSlug(e.target.value);
-                    clearError("slug");
-                  }}
-                  placeholder="post-url-slug"
-                  className={errors.slug ? "border-destructive" : ""}
-                />
-                <FieldError error={errors.slug} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="excerpt">Excerpt</Label>
-                <Textarea
-                  id="excerpt"
-                  value={excerpt}
-                  onChange={(e) => {
-                    setExcerpt(e.target.value);
-                    clearError("excerpt");
-                  }}
-                  placeholder="Brief summary of the post"
-                  rows={3}
-                  className={errors.excerpt ? "border-destructive" : ""}
-                />
-                <FieldError error={errors.excerpt} />
-              </div>
-              <div className="space-y-2">
-                <Label>Content</Label>
-                <TiptapEditor
-                  content={content}
-                  onChange={(val) => {
-                    setContent(val);
-                    clearError("content");
-                  }}
-                />
-                <FieldError error={errors.content} />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+    <div>
+      {/* Actions portaled into the AdminHeader bar */}
+      {headerSlot &&
+        createPortal(
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push("/admin/posts")}
+              className="gap-1.5 text-muted-foreground"
+            >
+              <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
+              <span className="hidden sm:inline">Posts</span>
+            </Button>
 
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Settings</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={status} onValueChange={setStatus}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="published">Published</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="featured"
-                  checked={isFeatured}
-                  onChange={(e) => setIsFeatured(e.target.checked)}
-                  className="rounded"
-                />
-                <Label htmlFor="featured">Feature on homepage</Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="showCoverImage"
-                  checked={showCoverImage}
-                  onChange={(e) => setShowCoverImage(e.target.checked)}
-                  className="rounded"
-                />
-                <Label htmlFor="showCoverImage">Show cover image</Label>
-              </div>
-              <div className="space-y-2">
-                <Label>County</Label>
-                <Select
-                  value={countyId}
-                  onValueChange={(val) => {
-                    setCountyId(val);
-                    clearError("countyId");
-                  }}
-                >
-                  <SelectTrigger className={errors.countyId ? "border-destructive" : ""}>
-                    <SelectValue placeholder="Select county" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {counties.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FieldError error={errors.countyId} />
-              </div>
-              <div className="space-y-2">
-                <Label>Category</Label>
-                <Select
-                  value={categoryId}
-                  onValueChange={(val) => {
-                    setCategoryId(val);
-                    clearError("categoryId");
-                  }}
-                >
-                  <SelectTrigger className={errors.categoryId ? "border-destructive" : ""}>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FieldError error={errors.categoryId} />
-              </div>
-            </CardContent>
-          </Card>
+            <Separator orientation="vertical" className="h-5" />
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Featured Image</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ImageUpload
-                value={featuredImage}
-                onChange={setFeaturedImage}
-                folder="riverlands/posts"
+            <Badge variant={statusVariant[status]} className="capitalize">
+              {status}
+            </Badge>
+
+            <span
+              className={cn(
+                "hidden text-xs sm:block",
+                saveStatus === "idle" && "invisible",
+                saveStatus === "pending" && "text-amber-600",
+                saveStatus === "saving" && "text-muted-foreground",
+                saveStatus === "saved" && "text-green-600 dark:text-green-400",
+                saveStatus === "error" && "text-destructive"
+              )}
+            >
+              {saveStatus === "pending" && "Unsaved changes"}
+              {saveStatus === "saving" && "Saving…"}
+              {saveStatus === "saved" && "Saved"}
+              {saveStatus === "error" && "Failed to save"}
+            </span>
+
+            {/* Right sidebar toggle */}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={toggleSidebar}
+              title={sidebarOpen ? "Hide settings panel" : "Show settings panel"}
+              className={cn(
+                "gap-1.5 text-muted-foreground",
+                sidebarOpen && "bg-secondary"
+              )}
+            >
+              <HugeiconsIcon icon={ViewSidebarRightIcon} size={16} />
+              <span className="hidden lg:inline">Settings</span>
+            </Button>
+
+            <Separator orientation="vertical" className="h-5" />
+
+            {/* Preview toggle */}
+            <Button
+              type="button"
+              variant={previewMode ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setPreviewMode((p) => !p)}
+              className="gap-1.5"
+            >
+              <HugeiconsIcon
+                icon={previewMode ? ViewOffIcon : EyeIcon}
+                size={16}
               />
-            </CardContent>
-          </Card>
+              {previewMode ? "Edit" : "Preview"}
+            </Button>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>SEO</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="metaTitle">Meta Title</Label>
-                <Input
-                  id="metaTitle"
-                  value={metaTitle}
-                  onChange={(e) => {
-                    setMetaTitle(e.target.value);
-                    clearError("metaTitle");
-                  }}
-                  placeholder="Custom meta title"
-                  className={errors.metaTitle ? "border-destructive" : ""}
-                />
-                <FieldError error={errors.metaTitle} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="metaDescription">Meta Description</Label>
-                <Textarea
-                  id="metaDescription"
-                  value={metaDescription}
-                  onChange={(e) => {
-                    setMetaDescription(e.target.value);
-                    clearError("metaDescription");
-                  }}
-                  placeholder="Custom meta description"
-                  rows={2}
-                  className={errors.metaDescription ? "border-destructive" : ""}
-                />
-                <FieldError error={errors.metaDescription} />
-              </div>
-            </CardContent>
-          </Card>
+            {/* Status action buttons */}
+            {status === "draft" && (
+              <Button
+                type="button"
+                size="sm"
+                onClick={handlePublish}
+                disabled={saveStatus === "saving" || !title.trim()}
+              >
+                Publish
+              </Button>
+            )}
+            {status === "published" && (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleUnpublish}
+                  disabled={saveStatus === "saving"}
+                >
+                  Unpublish
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleArchive}
+                  disabled={saveStatus === "saving"}
+                  className="text-muted-foreground"
+                >
+                  Archive
+                </Button>
+              </>
+            )}
+            {status === "archived" && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handlePublish}
+                disabled={saveStatus === "saving" || !title.trim()}
+              >
+                Republish
+              </Button>
+            )}
+          </div>,
+          headerSlot
+        )}
+
+      {/* ── Preview mode ── */}
+      {previewMode ? (
+        <div className="mx-auto max-w-4xl">
+          <div className="mb-6 rounded-lg border border-amber/30 bg-amber/5 px-4 py-2 text-sm text-muted-foreground">
+            Preview — this is how the post will appear to visitors when published
+          </div>
+
+          <article>
+            {showCoverImage && (
+              featuredImage ? (
+                <div className="mb-8 aspect-[16/9] overflow-hidden rounded-xl">
+                  {/* Preview only — intentionally using img over next/image (unknown dimensions) */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={featuredImage}
+                    alt={title}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="mb-8 aspect-[16/9] rounded-xl bg-gradient-to-br from-river-blue/20 via-sage/10 to-amber/10" />
+              )
+            )}
+
+            <div className="mb-3 flex items-center gap-2">
+              {selectedCategory && (
+                <Badge variant="secondary">{selectedCategory.name}</Badge>
+              )}
+              {selectedCounty && (
+                <span className="text-sm text-muted-foreground">
+                  {selectedCounty.name} County
+                </span>
+              )}
+            </div>
+
+            <h1 className="mb-4 font-serif text-4xl font-bold leading-tight text-foreground">
+              {title || (
+                <span className="italic text-muted-foreground">Untitled post</span>
+              )}
+            </h1>
+
+            {excerpt && (
+              <p className="mb-8 text-lg text-muted-foreground">{excerpt}</p>
+            )}
+
+            <div
+              className="prose prose-lg max-w-none"
+              dangerouslySetInnerHTML={{
+                __html: content || "<p><em>No content yet…</em></p>",
+              }}
+            />
+          </article>
         </div>
-      </div>
+      ) : (
+        /* ── Editor mode ── */
+        <div className="flex gap-6">
+          {/* Main editor */}
+          <div className="min-w-0 flex-1">
+            <TiptapEditor
+              content={content}
+              onChange={(v) => { setContent(v); markDirty(); }}
+            />
+          </div>
 
-      <div className="flex gap-3">
-        <Button type="submit" disabled={loading}>
-          {loading ? "Saving..." : isEdit ? "Update Post" : "Create Post"}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.push("/admin/posts")}
-        >
-          Cancel
-        </Button>
-      </div>
-    </form>
+          {/* Collapsible right sidebar */}
+          {sidebarOpen && (
+            <div className="w-72 flex-shrink-0 space-y-4 xl:w-80">
+              {/* Title / Slug / Excerpt */}
+              <div className="space-y-4 rounded-lg border bg-card p-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Title</Label>
+                  <Input
+                    id="title"
+                    value={title}
+                    onChange={(e) => handleTitleChange(e.target.value)}
+                    placeholder="Post title"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="slug">Slug</Label>
+                  <Input
+                    id="slug"
+                    value={slug}
+                    onChange={(e) => {
+                      setSlug(e.target.value);
+                      setSlugEdited(true);
+                      markDirty();
+                    }}
+                    placeholder="post-url-slug"
+                    className="font-mono text-xs"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="excerpt">Excerpt</Label>
+                  <Textarea
+                    id="excerpt"
+                    value={excerpt}
+                    onChange={(e) => { setExcerpt(e.target.value); markDirty(); }}
+                    placeholder="Brief summary of the post…"
+                    rows={3}
+                  />
+                </div>
+              </div>
+
+              {/* Settings */}
+              <div className="space-y-4 rounded-lg border bg-card p-4">
+                <p className="text-sm font-semibold text-card-foreground">
+                  Settings
+                </p>
+
+                <div className="space-y-2">
+                  <Label>County</Label>
+                  <Select value={countyId} onValueChange={(v) => { setCountyId(v); markDirty(); }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select county" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {counties.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Category</Label>
+                  <Select value={categoryId} onValueChange={(v) => { setCategoryId(v); markDirty(); }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="featured"
+                    checked={isFeatured}
+                    onChange={(e) => { setIsFeatured(e.target.checked); markDirty(); }}
+                    className="rounded"
+                  />
+                  <Label htmlFor="featured">Feature on homepage</Label>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="showCoverImage"
+                    checked={showCoverImage}
+                    onChange={(e) => { setShowCoverImage(e.target.checked); markDirty(); }}
+                    className="rounded"
+                  />
+                  <Label htmlFor="showCoverImage">Show cover image</Label>
+                </div>
+              </div>
+
+              {/* Featured Image */}
+              <div className="space-y-3 rounded-lg border bg-card p-4">
+                <p className="text-sm font-semibold text-card-foreground">
+                  Featured Image
+                </p>
+                <ImageUpload
+                  value={featuredImage}
+                  onChange={(v) => { setFeaturedImage(v); markDirty(); }}
+                  folder="riverlands/posts"
+                />
+              </div>
+
+              {/* SEO */}
+              <div className="space-y-4 rounded-lg border bg-card p-4">
+                <p className="text-sm font-semibold text-card-foreground">SEO</p>
+
+                <div className="space-y-2">
+                  <Label htmlFor="metaTitle">Meta Title</Label>
+                  <Input
+                    id="metaTitle"
+                    value={metaTitle}
+                    onChange={(e) => { setMetaTitle(e.target.value); markDirty(); }}
+                    placeholder="Custom meta title"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="metaDescription">Meta Description</Label>
+                  <Textarea
+                    id="metaDescription"
+                    value={metaDescription}
+                    onChange={(e) => { setMetaDescription(e.target.value); markDirty(); }}
+                    placeholder="Custom meta description"
+                    rows={2}
+                  />
+                </div>
+              </div>
+
+              {/* Danger zone — only on saved posts */}
+              {postId && (
+                <div className="space-y-3 rounded-lg border border-destructive/30 bg-card p-4">
+                  <p className="text-sm font-semibold text-destructive">
+                    Danger Zone
+                  </p>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="w-full"
+                    onClick={async () => {
+                      if (
+                        !confirm(
+                          "Delete this post permanently? This cannot be undone."
+                        )
+                      )
+                        return;
+                      const res = await fetch(`/api/admin/posts/${postId}`, {
+                        method: "DELETE",
+                      });
+                      if (res.ok) {
+                        toast.success("Post deleted");
+                        router.push("/admin/posts");
+                      } else {
+                        toast.error("Failed to delete post");
+                      }
+                    }}
+                  >
+                    Delete Post
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

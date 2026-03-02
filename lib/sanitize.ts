@@ -46,8 +46,32 @@ export function sanitizeContent(html: string): string {
     ],
     allowedAttributes: {
       a: ["href", "target", "rel"],
-      img: ["src", "alt", "width", "height", "loading"],
+      img: ["src", "alt", "width", "height", "loading", "style"],
+      p: ["style"],
+      h1: ["style"],
+      h2: ["style"],
+      h3: ["style"],
+      h4: ["style"],
+      h5: ["style"],
+      h6: ["style"],
       "*": ["class", "id"],
+    },
+    allowedStyles: {
+      // Images: width percentages/px and block alignment via margins
+      img: {
+        width: [/^\d+(?:\.\d+)?(?:%|px)$/],
+        display: [/^block$/, /^inline$/, /^inline-block$/],
+        "margin-left": [/^auto$/, /^\d+(?:\.\d+)?(?:px|em|rem|%)$/],
+        "margin-right": [/^auto$/, /^\d+(?:\.\d+)?(?:px|em|rem|%)$/],
+      },
+      // Headings and paragraphs: text alignment (set by TipTap TextAlign extension)
+      p: { "text-align": [/^left$/, /^center$/, /^right$/] },
+      h1: { "text-align": [/^left$/, /^center$/, /^right$/] },
+      h2: { "text-align": [/^left$/, /^center$/, /^right$/] },
+      h3: { "text-align": [/^left$/, /^center$/, /^right$/] },
+      h4: { "text-align": [/^left$/, /^center$/, /^right$/] },
+      h5: { "text-align": [/^left$/, /^center$/, /^right$/] },
+      h6: { "text-align": [/^left$/, /^center$/, /^right$/] },
     },
     allowedSchemes: ["http", "https", "mailto"],
     transformTags: {

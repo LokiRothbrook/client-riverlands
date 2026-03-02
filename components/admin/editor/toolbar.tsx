@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { type Editor } from "@tiptap/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,9 @@ import {
   Link01Icon,
   ArrowTurnBackwardIcon,
   ArrowTurnForwardIcon,
+  AlignLeftIcon,
+  AlignHorizontalCenterIcon,
+  AlignRightIcon,
 } from "@hugeicons/core-free-icons";
 import { LinkDialog } from "./link-dialog";
 import { ImageButton } from "./image-button";
@@ -30,10 +33,31 @@ interface ToolbarProps {
 
 export function EditorToolbar({ editor, enableImages = true }: ToolbarProps) {
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  // Force re-render whenever the editor state changes (selection, marks, etc.)
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    if (!editor) return;
+    const update = () => setTick((t) => t + 1);
+    editor.on("transaction", update);
+    editor.on("selectionUpdate", update);
+    return () => {
+      editor.off("transaction", update);
+      editor.off("selectionUpdate", update);
+    };
+  }, [editor]);
 
   if (!editor) return null;
 
   const btnClass = "h-8 w-8 p-0";
+  const active = (name: string, attrs?: Record<string, unknown>) =>
+    editor.isActive(name, attrs) ? "bg-secondary" : "";
+  // Text-align check — editor.isActive accepts an attrs-only overload but TS types
+  // don't expose it; use the cast to use the documented API.
+  const alignActive = (align: string) =>
+    (editor.isActive as (a: Record<string, unknown>) => boolean)({ textAlign: align })
+      ? "bg-secondary"
+      : "";
 
   return (
     <>
@@ -43,7 +67,7 @@ export function EditorToolbar({ editor, enableImages = true }: ToolbarProps) {
           type="button"
           variant="ghost"
           size="sm"
-          className={cn(btnClass, editor.isActive("bold") && "bg-secondary")}
+          className={cn(btnClass, active("bold"))}
           onClick={() => editor.chain().focus().toggleBold().run()}
           title="Bold"
         >
@@ -53,7 +77,7 @@ export function EditorToolbar({ editor, enableImages = true }: ToolbarProps) {
           type="button"
           variant="ghost"
           size="sm"
-          className={cn(btnClass, editor.isActive("italic") && "bg-secondary")}
+          className={cn(btnClass, active("italic"))}
           onClick={() => editor.chain().focus().toggleItalic().run()}
           title="Italic"
         >
@@ -63,10 +87,7 @@ export function EditorToolbar({ editor, enableImages = true }: ToolbarProps) {
           type="button"
           variant="ghost"
           size="sm"
-          className={cn(
-            btnClass,
-            editor.isActive("underline") && "bg-secondary"
-          )}
+          className={cn(btnClass, active("underline"))}
           onClick={() => editor.chain().focus().toggleUnderline().run()}
           title="Underline"
         >
@@ -80,13 +101,8 @@ export function EditorToolbar({ editor, enableImages = true }: ToolbarProps) {
           type="button"
           variant="ghost"
           size="sm"
-          className={cn(
-            btnClass,
-            editor.isActive("heading", { level: 2 }) && "bg-secondary"
-          )}
-          onClick={() =>
-            editor.chain().focus().toggleHeading({ level: 2 }).run()
-          }
+          className={cn(btnClass, active("heading", { level: 2 }))}
+          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
           title="Heading 2"
         >
           <HugeiconsIcon icon={Heading02Icon} size={16} />
@@ -95,13 +111,8 @@ export function EditorToolbar({ editor, enableImages = true }: ToolbarProps) {
           type="button"
           variant="ghost"
           size="sm"
-          className={cn(
-            btnClass,
-            editor.isActive("heading", { level: 3 }) && "bg-secondary"
-          )}
-          onClick={() =>
-            editor.chain().focus().toggleHeading({ level: 3 }).run()
-          }
+          className={cn(btnClass, active("heading", { level: 3 }))}
+          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
           title="Heading 3"
         >
           <HugeiconsIcon icon={Heading03Icon} size={16} />
@@ -114,10 +125,7 @@ export function EditorToolbar({ editor, enableImages = true }: ToolbarProps) {
           type="button"
           variant="ghost"
           size="sm"
-          className={cn(
-            btnClass,
-            editor.isActive("bulletList") && "bg-secondary"
-          )}
+          className={cn(btnClass, active("bulletList"))}
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           title="Bullet List"
         >
@@ -127,10 +135,7 @@ export function EditorToolbar({ editor, enableImages = true }: ToolbarProps) {
           type="button"
           variant="ghost"
           size="sm"
-          className={cn(
-            btnClass,
-            editor.isActive("orderedList") && "bg-secondary"
-          )}
+          className={cn(btnClass, active("orderedList"))}
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
           title="Ordered List"
         >
@@ -140,10 +145,7 @@ export function EditorToolbar({ editor, enableImages = true }: ToolbarProps) {
           type="button"
           variant="ghost"
           size="sm"
-          className={cn(
-            btnClass,
-            editor.isActive("blockquote") && "bg-secondary"
-          )}
+          className={cn(btnClass, active("blockquote"))}
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
           title="Blockquote"
         >
@@ -162,12 +164,46 @@ export function EditorToolbar({ editor, enableImages = true }: ToolbarProps) {
 
         <div className="mx-0.5 h-6 w-px bg-border" />
 
+        {/* Text Alignment */}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className={cn(btnClass, alignActive("left"))}
+          onClick={() => editor.chain().focus().setTextAlign("left").run()}
+          title="Align Left"
+        >
+          <HugeiconsIcon icon={AlignLeftIcon} size={16} />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className={cn(btnClass, alignActive("center"))}
+          onClick={() => editor.chain().focus().setTextAlign("center").run()}
+          title="Align Center"
+        >
+          <HugeiconsIcon icon={AlignHorizontalCenterIcon} size={16} />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className={cn(btnClass, alignActive("right"))}
+          onClick={() => editor.chain().focus().setTextAlign("right").run()}
+          title="Align Right"
+        >
+          <HugeiconsIcon icon={AlignRightIcon} size={16} />
+        </Button>
+
+        <div className="mx-0.5 h-6 w-px bg-border" />
+
         {/* Link */}
         <Button
           type="button"
           variant="ghost"
           size="sm"
-          className={cn(btnClass, editor.isActive("link") && "bg-secondary")}
+          className={cn(btnClass, active("link"))}
           onClick={() => setLinkDialogOpen(true)}
           title="Link"
         >

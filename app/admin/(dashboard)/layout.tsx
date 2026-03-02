@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { AuthProvider } from "@/lib/auth-context";
+import { SidebarProvider } from "@/lib/sidebar-context";
 import { AdminSidebar } from "@/components/admin/sidebar";
 import { AdminHeader } from "@/components/admin/header";
 
@@ -26,15 +27,17 @@ export default async function AdminLayout({
 
   return (
     <AuthProvider initialUser={authUser}>
-      <div className="flex h-screen overflow-hidden">
-        <AdminSidebar />
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <AdminHeader />
-          <main className="flex-1 overflow-y-auto bg-secondary/30 p-6">
-            {children}
-          </main>
+      <SidebarProvider>
+        <div className="flex h-screen overflow-hidden">
+          <AdminSidebar />
+          <div className="flex flex-1 flex-col overflow-hidden">
+            <AdminHeader />
+            <main className="flex-1 overflow-y-auto bg-secondary/30 p-6">
+              {children}
+            </main>
+          </div>
         </div>
-      </div>
+      </SidebarProvider>
     </AuthProvider>
   );
 }
