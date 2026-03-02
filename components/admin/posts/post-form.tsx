@@ -27,6 +27,7 @@ import {
   EyeIcon,
   ViewOffIcon,
   ViewSidebarRightIcon,
+  Cancel01Icon,
 } from "@hugeicons/core-free-icons";
 
 type SaveStatus = "idle" | "pending" | "saving" | "saved" | "error";
@@ -57,11 +58,27 @@ interface PostFormProps {
     is_featured: boolean;
     show_cover_image: boolean;
     status: string;
+    published_at?: string | null;
     meta_title: string | null;
     meta_description: string | null;
   };
   counties: County[];
   categories: Category[];
+}
+
+/** Format a "YYYY-MM-DD" date string for display (e.g. "Mar 10, 2026") */
+function formatScheduledDate(dateStr: string): string {
+  // Parse as noon UTC to avoid off-by-one from timezone shifts
+  return new Date(dateStr + "T12:00:00Z").toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+/** Today's date as "YYYY-MM-DD" — used as the minimum for the date picker */
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
 }
 
 export function PostForm({ post, counties, categories }: PostFormProps) {
@@ -94,6 +111,18 @@ export function PostForm({ post, counties, categories }: PostFormProps) {
   );
   const [slugEdited, setSlugEdited] = useState(!!post);
 
+  // Scheduled publish date (YYYY-MM-DD) — only relevant for draft posts
+  const [scheduledFor, setScheduledFor] = useState<string>(() => {
+    if (post?.status === "draft" && post.published_at) {
+      const d = new Date(post.published_at);
+      // Only pre-fill if the stored date is in the future
+      if (d > new Date()) {
+        return d.toISOString().slice(0, 10);
+      }
+    }
+    return "";
+  });
+
   // UI state
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [previewMode, setPreviewMode] = useState(false);
@@ -117,6 +146,7 @@ export function PostForm({ post, counties, categories }: PostFormProps) {
     status,
     metaTitle,
     metaDescription,
+    scheduledFor,
   });
   useEffect(() => {
     currentRef.current = {
@@ -132,6 +162,7 @@ export function PostForm({ post, counties, categories }: PostFormProps) {
       status,
       metaTitle,
       metaDescription,
+      scheduledFor,
     };
   });
 
@@ -155,6 +186,15 @@ export function PostForm({ post, counties, categories }: PostFormProps) {
 
     setSaveStatus("saving");
     try {
+      // Determine what to send for scheduledFor:
+      // - Publishing immediately → clear any existing schedule
+      // - Draft with a date set → set to 6am UTC on that date (≈ midnight CST)
+      // - Draft with no date → clear it (null)
+      let scheduledForValue: string | null = null;
+      if (saveWith !== "published" && c.scheduledFor) {
+        scheduledForValue = `${c.scheduledFor}T06:00:00.000Z`;
+      }
+
       const body = {
         title: c.title,
         slug: c.slug || slugify(c.title),
@@ -168,6 +208,7 @@ export function PostForm({ post, counties, categories }: PostFormProps) {
         metaTitle: c.metaTitle || null,
         metaDescription: c.metaDescription || null,
         status: saveWith,
+        scheduledFor: scheduledForValue,
       };
 
       const id = postIdRef.current;
@@ -246,12 +287,14 @@ export function PostForm({ post, counties, categories }: PostFormProps) {
     showCoverImage,
     metaTitle,
     metaDescription,
+    scheduledFor,
   ]);
 
   // ── Status action buttons ──────────────────────────────────────
   async function handlePublish() {
     if (timerRef.current) clearTimeout(timerRef.current);
     setStatus("published");
+    setScheduledFor(""); // Clear any pending schedule — publishing immediately
     const ok = await performSaveRef.current("published");
     if (ok) toast.success("Post published");
   }
@@ -270,7 +313,14 @@ export function PostForm({ post, counties, categories }: PostFormProps) {
     if (ok) toast.success("Post archived");
   }
 
-  // ── Preview helpers ────────────────────────────────────────────
+  async function handleClearSchedule() {
+    setScheduledFor("");
+    markDirty();
+  }
+
+  // ── Derived state ──────────────────────────────────────────────
+  const isScheduled = status === "draft" && !!scheduledFor;
+
   const selectedCounty = counties.find((c) => c.id === countyId);
   const selectedCategory = categories.find((c) => c.id === categoryId);
 
@@ -306,9 +356,23 @@ export function PostForm({ post, counties, categories }: PostFormProps) {
 
             <Separator orientation="vertical" className="h-5" />
 
-            <Badge variant={statusVariant[status]} className="capitalize">
-              {status}
+            {/* Status badge — shows "Scheduled" when a future date is set */}
+            <Badge
+              variant={isScheduled ? "secondary" : statusVariant[status]}
+              className={cn(
+                "capitalize",
+                isScheduled && "border-amber/50 text-amber"
+              )}
+            >
+              {isScheduled ? "Scheduled" : status}
             </Badge>
+
+            {/* Show the scheduled date in the header */}
+            {isScheduled && (
+              <span className="hidden text-xs text-muted-foreground sm:block">
+                {formatScheduledDate(scheduledFor)}
+              </span>
+            )}
 
             <span
               className={cn(
@@ -367,7 +431,7 @@ export function PostForm({ post, counties, categories }: PostFormProps) {
                 onClick={handlePublish}
                 disabled={saveStatus === "saving" || !title.trim()}
               >
-                Publish
+                {isScheduled ? "Publish Now" : "Publish"}
               </Button>
             )}
             {status === "published" && (
@@ -573,6 +637,46 @@ export function PostForm({ post, counties, categories }: PostFormProps) {
                   />
                   <Label htmlFor="showCoverImage">Show cover image</Label>
                 </div>
+
+                {/* Scheduled publish date — only for draft posts */}
+                {status === "draft" && (
+                  <>
+                    <Separator />
+                    <div className="space-y-2">
+                      <Label htmlFor="scheduledFor">Schedule Publish Date</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="scheduledFor"
+                          type="date"
+                          value={scheduledFor}
+                          min={todayIso()}
+                          onChange={(e) => {
+                            setScheduledFor(e.target.value);
+                            markDirty();
+                          }}
+                          className="flex-1"
+                        />
+                        {scheduledFor && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={handleClearSchedule}
+                            title="Clear scheduled date"
+                            className="shrink-0 text-muted-foreground hover:text-foreground"
+                          >
+                            <HugeiconsIcon icon={Cancel01Icon} size={14} />
+                          </Button>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {isScheduled
+                          ? `Will publish automatically on ${formatScheduledDate(scheduledFor)}`
+                          : "Leave blank to publish manually"}
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Featured Image */}
