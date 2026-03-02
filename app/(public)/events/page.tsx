@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { EventsFilter } from "@/components/events/events-filter";
 import { Breadcrumb } from "@/components/breadcrumb";
+import { PageBanner } from "@/components/page-banner";
 import { JsonLd } from "@/components/json-ld";
 import { breadcrumbSchema } from "@/lib/structured-data";
 import { getPublishedEvents } from "@/lib/queries";
@@ -32,7 +33,7 @@ export default async function EventsPage() {
       />
 
       {/* Hero */}
-      <section className="bg-river-blue py-16 sm:py-20">
+      <PageBanner>
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
             Events Calendar
@@ -42,7 +43,7 @@ export default async function EventsPage() {
             happening across the river counties.
           </p>
         </div>
-      </section>
+      </PageBanner>
 
       <div className="border-b bg-secondary/30">
         <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">

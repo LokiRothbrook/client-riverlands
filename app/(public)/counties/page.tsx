@@ -8,6 +8,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowRight02Icon, Location01Icon } from "@hugeicons/core-free-icons";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { JsonLd } from "@/components/json-ld";
+import { PageBanner } from "@/components/page-banner";
 import { breadcrumbSchema } from "@/lib/structured-data";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://riverlands.org";
@@ -86,7 +87,7 @@ export default async function CountiesPage() {
       />
 
       {/* Hero */}
-      <section className="bg-river-blue py-16 sm:py-20">
+      <PageBanner>
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
             Explore Our Counties
@@ -97,7 +98,7 @@ export default async function CountiesPage() {
             gems waiting to be discovered.
           </p>
         </div>
-      </section>
+      </PageBanner>
 
       <div className="border-b bg-secondary/30">
         <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">

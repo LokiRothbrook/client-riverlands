@@ -22,6 +22,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { JsonLd } from "@/components/json-ld";
 import { breadcrumbSchema } from "@/lib/structured-data";
+import { PageBanner } from "@/components/page-banner";
 import { CountySidebarAd } from "@/components/ads/county-sidebar-ad";
 import { AffiliateSidebar } from "@/components/ads/affiliate-sidebar";
 
@@ -85,21 +86,8 @@ export default async function CountyPage({ params }: CountyPageProps) {
       />
 
       {/* Hero */}
-      <section className="relative bg-river-blue py-16 sm:py-24">
-        <svg
-          className="absolute inset-0 h-full w-full opacity-10"
-          preserveAspectRatio="none"
-          viewBox="0 0 1200 400"
-          fill="none"
-          aria-hidden="true"
-        >
-          <path
-            d="M0 200 C100 170, 200 230, 300 200 S500 170, 600 200 S800 230, 900 200 S1100 170, 1200 200"
-            stroke="white"
-            strokeWidth="2"
-          />
-        </svg>
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <PageBanner className="py-16 sm:py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <nav className="mb-4 text-sm text-white/60">
             <Link href="/" className="hover:text-white/80">
               Home
@@ -121,7 +109,7 @@ export default async function CountyPage({ params }: CountyPageProps) {
             {county.description}
           </p>
         </div>
-      </section>
+      </PageBanner>
 
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid gap-12 lg:grid-cols-3">

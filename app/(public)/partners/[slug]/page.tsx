@@ -15,6 +15,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { JsonLd } from "@/components/json-ld";
+import { PageBanner } from "@/components/page-banner";
 import {
   localBusinessSchema,
   breadcrumbSchema,
@@ -80,7 +81,7 @@ export default async function PartnerDetailPage({
       />
 
       {/* Hero */}
-      <section className="bg-river-blue py-16 sm:py-20">
+      <PageBanner>
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-2">
             <Badge className="bg-white/20 text-white">{partner.category}</Badge>
@@ -93,7 +94,7 @@ export default async function PartnerDetailPage({
           </h1>
           <p className="mt-4 text-lg text-white/80">{partner.countyName}</p>
         </div>
-      </section>
+      </PageBanner>
 
       <div className="border-b bg-secondary/30">
         <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">

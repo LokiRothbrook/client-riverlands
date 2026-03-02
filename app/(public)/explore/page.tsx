@@ -9,6 +9,7 @@ import { Breadcrumb } from "@/components/breadcrumb";
 import { JsonLd } from "@/components/json-ld";
 import { breadcrumbSchema } from "@/lib/structured-data";
 import { getUpcomingEvents, getActivePartners } from "@/lib/queries";
+import { PageBanner } from "@/components/page-banner";
 import type { MapMarker } from "@/components/map/region-map";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://riverlands.org";
@@ -81,7 +82,7 @@ export default async function ExplorePage() {
       />
 
       {/* Hero */}
-      <section className="bg-river-blue py-16 sm:py-20">
+      <PageBanner>
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
             Explore the Region
@@ -91,7 +92,7 @@ export default async function ExplorePage() {
             interest across the seven river counties.
           </p>
         </div>
-      </section>
+      </PageBanner>
 
       <div className="border-b bg-secondary/30">
         <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">

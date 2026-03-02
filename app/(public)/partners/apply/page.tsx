@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PartnerApplyForm } from "@/components/forms/partner-apply-form";
 import { Breadcrumb } from "@/components/breadcrumb";
+import { PageBanner } from "@/components/page-banner";
 import { JsonLd } from "@/components/json-ld";
 import { breadcrumbSchema } from "@/lib/structured-data";
 
@@ -25,7 +26,7 @@ export default function PartnerApplyPage() {
       />
 
       {/* Hero */}
-      <section className="bg-river-blue py-16 sm:py-20">
+      <PageBanner>
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
             Become a Partner
@@ -35,7 +36,7 @@ export default function PartnerApplyPage() {
             exploring the seven river counties of western Illinois.
           </p>
         </div>
-      </section>
+      </PageBanner>
 
       <div className="border-b bg-secondary/30">
         <div className="mx-auto max-w-2xl px-4 py-3 sm:px-6">

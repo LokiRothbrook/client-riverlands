@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { JsonLd } from "@/components/json-ld";
 import { breadcrumbSchema } from "@/lib/structured-data";
+import { PageBanner } from "@/components/page-banner";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://riverlands.org";
 
@@ -57,7 +58,7 @@ export default function AdvertisePage() {
       />
 
       {/* Hero */}
-      <section className="bg-river-blue py-16 sm:py-20">
+      <PageBanner>
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
             Advertise With Us
@@ -68,7 +69,7 @@ export default function AdvertisePage() {
             enthusiasts.
           </p>
         </div>
-      </section>
+      </PageBanner>
 
       <div className="border-b bg-secondary/30">
         <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
