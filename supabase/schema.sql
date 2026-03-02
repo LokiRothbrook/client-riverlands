@@ -243,7 +243,9 @@ begin
   new.updated_at = now();
   return new;
 end;
-$$ language plpgsql;
+$$ language plpgsql
+   security definer
+   set search_path = '';
 
 create trigger profiles_updated_at before update on profiles
   for each row execute function update_updated_at();
@@ -284,7 +286,9 @@ begin
   );
   return new;
 end;
-$$ language plpgsql security definer;
+$$ language plpgsql
+   security definer
+   set search_path = '';
 
 create trigger on_auth_user_created
   after insert on auth.users
@@ -308,23 +312,26 @@ alter table site_settings enable row level security;
 
 -- Helper: get current user's role
 create or replace function get_user_role()
-returns user_role as $$
-  select role from profiles where id = auth.uid();
-$$ language sql security definer stable;
+returns public.user_role as $$
+  select role from public.profiles where id = auth.uid();
+$$ language sql security definer stable
+   set search_path = '';
 
 -- Helper: get current user's assigned counties
 create or replace function get_user_counties()
 returns text[] as $$
-  select assigned_counties from profiles where id = auth.uid();
-$$ language sql security definer stable;
+  select assigned_counties from public.profiles where id = auth.uid();
+$$ language sql security definer stable
+   set search_path = '';
 
 -- Helper: check if user can manage a county
 create or replace function can_manage_county(county_slug text)
 returns boolean as $$
   select
-    get_user_role() = 'admin'
-    or county_slug = any(get_user_counties());
-$$ language sql security definer stable;
+    public.get_user_role() = 'admin'
+    or county_slug = any(public.get_user_counties());
+$$ language sql security definer stable
+   set search_path = '';
 
 -- ----- PROFILES -----
 -- Everyone can read profiles (for author display)
@@ -437,9 +444,17 @@ create policy "partners_manage_admin" on partners
   for all using (get_user_role() = 'admin');
 
 -- ----- PARTNER REQUESTS -----
--- Anyone can insert a request (public form)
+-- Anyone can submit a partner request, but workflow fields must use their defaults
 create policy "partner_requests_insert" on partner_requests
-  for insert with check (true);
+  for insert with check (
+    length(trim(business_name))  between 1 and 200
+    and length(trim(contact_name)) between 1 and 200
+    and length(trim(email))        between 5 and 254
+    and length(trim(description))  between 1 and 5000
+    and status      = 'pending'
+    and reviewed_by is null
+    and reviewed_at is null
+  );
 -- Admins can read and manage requests
 create policy "partner_requests_manage_admin" on partner_requests
   for all using (get_user_role() = 'admin');
@@ -457,9 +472,15 @@ create policy "ad_placements_manage_admin" on ad_placements
   for all using (get_user_role() = 'admin');
 
 -- ----- NEWSLETTER SUBSCRIBERS -----
--- Anyone can insert (public signup)
+-- Anyone can subscribe, but security-sensitive fields must use their defaults
 create policy "newsletter_insert" on newsletter_subscribers
-  for insert with check (true);
+  for insert with check (
+    length(trim(email))  between 5 and 254
+    and verified         = false
+    and verification_token is not null
+    and unsubscribe_token  is not null
+    and manage_token       is not null
+  );
 -- Subscribers can update their own preferences (via unsubscribe_token)
 -- This is handled via API routes with service role
 -- Admins can read and manage
@@ -467,9 +488,16 @@ create policy "newsletter_manage_admin" on newsletter_subscribers
   for all using (get_user_role() = 'admin');
 
 -- ----- CONTACT MESSAGES -----
--- Anyone can insert a message (public form)
+-- Anyone can submit the contact form, but enforce expected field values
 create policy "contact_messages_insert" on contact_messages
-  for insert with check (true);
+  for insert with check (
+    length(trim(name))    between 1 and 200
+    and length(trim(email))   between 5 and 254
+    and length(trim(subject)) between 1 and 300
+    and length(trim(message)) between 1 and 10000
+    and read     = false
+    and archived = false
+  );
 -- Admins can read and manage messages
 create policy "contact_messages_manage_admin" on contact_messages
   for all using (get_user_role() = 'admin');
